@@ -1,0 +1,49 @@
+{
+  "menu": {
+    "file": "Tệp",
+    "edit": "Sửa",
+    "view": "Góc nhìn",
+    "tools": "Công cụ",
+    "machine": "Máy CNC",
+    "window": "Cửa sổ",
+    "help": "Trợ giúp",
+    "open_project": "Mở dự án (.ycam)...",
+    "import_cad": "Nạp file CAD (STEP/DXF)...",
+    "save_as": "Lưu thành (.ycam)...",
+    "export_dxf": "Xuất bản vẽ DXF...",
+    "export_gcode": "Xuất G-Code...",
+    "settings": "Thiết lập..."
+  },
+  "toolbar": {
+    "open_project": "Mở Dự Án",
+    "import_cad": "Nạp CAD",
+    "save_project": "Lưu Dự Án",
+    "calc_holes": "Tính Toán Lỗ",
+    "processing": "Đang xử lý...",
+    "export_dxf": "Xuất DXF",
+    "post_gcode": "Xuất G-Code",
+    "fit_screen": "Vừa màn hình"
+  },
+  "panels": {
+    "ops_manager": "QUẢN LÝ NGUYÊN CÔNG",
+    "wcs_origin": "GỐC TỌA ĐỘ (G54)",
+    "tool_setup": "THIẾT LẬP DAO (T_PLANE)",
+    "tool_no": "SỐ DAO",
+    "dia_mm": "Đ.KÍNH (MM)",
+    "spindle": "VÒNG QUAY (S)",
+    "feed": "BƯỚC TIẾN (F)",
+    "peck": "MỖI LÁT (Q)",
+    "z_safe": "Z AN TOÀN",
+    "output": "XUẤT DỮ LIỆU",
+    "levels_manager": "QUẢN LÝ LỚP (LAYERS)",
+    "no_layers": "Chưa có layer",
+    "model": "Mô hình:"
+  },
+  "canvas": {
+    "no_model": "CHƯA CÓ MÔ HÌNH",
+    "select_objs": "Chọn đối tượng...",
+    "move_prompt": "MOVE Chỉ định điểm gốc hoặc [Khoảng cách]:",
+    "copy_prompt": "COPY Chỉ định điểm gốc hoặc [Khoảng cách]:",
+    "dim_prompt": "DIM Chỉ định điểm gốc đường gióng đầu tiên:"
+  }
+}

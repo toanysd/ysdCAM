@@ -1,0 +1,45 @@
+# Antigravity Workspace Rules — YSDCAM (Claude Opus Standard)
+# BẮT BUỘC: Khi bắt đầu bất kỳ cuộc hội thoại mới nào trong workspace này, AI phải tuân thủ nghiêm ngặt các điều sau.
+
+## NHẬN DẠNG HỆ THỐNG
+Bạn đang làm việc trong **Antigravity V2.0 (Enterprise Monorepo)** — Dự án: **ysdCAM**.
+
+## QUY TẮC BẮT BUỘC (MANDATORY RULES)
+
+**[RULE-0] Tiêu đề phản hồi:**
+Bắt đầu bằng: "ĐÃ ÁP DỤNG QUY TẮC CHO PHẦN TRẢ LỜI DƯỚI ĐÂY"
+Kết thúc bằng: "[ĐÃ HOÀN TẤT LUỒNG XỬ LÝ - ĐANG CHỜ LỆNH MỚI]"
+
+**[RULE-1] Đọc cấu hình hệ thống:**
+Trước khi code bất kỳ nội dung nào, đọc file quy tắc tại `.agents\rules\antigravity-v2-rules.md` (đường dẫn tương đối từ gốc Workspace).
+
+**[RULE-2] Tư duy Chain-of-Thought bắt buộc:**
+Trước khi đề xuất bất kỳ thay đổi mã nguồn nào, bắt buộc trình bày suy luận trong thẻ `<thinking> ... </thinking>` bao gồm: phân tích yêu cầu, xác định rủi ro, và liệt kê các bước sẽ thực hiện.
+
+**[RULE-3] Đọc file trước khi sửa (Read-Before-Touch):**
+Trước khi chỉnh sửa bất kỳ file nào, phải dùng `view_file` để đọc nội dung thực tế. KHÔNG được đề xuất thay đổi dựa trên trí nhớ hay giả định về nội dung file.
+
+**[RULE-4] Zero-Guessing — Chống bịa đặt:**
+Không giả định đường dẫn file, tên function, cấu trúc API, hay dữ liệu trả về. Phải dùng `grep_search` hoặc `list_dir` để xác minh trước. Nếu không tìm thấy, phản hồi tường minh "Không tìm thấy [X], vui lòng cung cấp đường dẫn chính xác."
+
+**[RULE-5] Chỉnh sửa Phẫu thuật (Surgical Edits):**
+- Dùng `replace_file_content` hoặc `multi_replace_file_content`, KHÔNG xuất lại toàn bộ file.
+- Chỉ sửa đúng vị trí được chỉ định.
+- Cấm tự ý: refactor code ngoài yêu cầu, thêm feature không được giao, thay đổi formatting toàn file.
+
+**[RULE-6] Nguyên tắc Thay đổi Tối thiểu (Minimal Change):**
+Phạm vi thay đổi = đúng những gì được yêu cầu. Nếu phát hiện vấn đề khác ngoài task hiện tại, ghi chú báo cáo — không tự ý sửa.
+
+**[RULE-7] Xác minh Kép (Dual Verification):**
+Sau khi sửa code: (1) chạy lệnh build/test, (2) đọc output thực tế, (3) mới thông báo hoàn thành. KHÔNG tự ý chuyển bước tiếp theo khi chưa xác minh.
+
+**[RULE-8] Khôi phục ngữ cảnh (Context Recovery):**
+Đọc `SESSION_CONTEXT.md` tại thư mục `.ai/` và nạp checklist công việc từ `task.md` (nếu đang thực thi task phức tạp) để khôi phục trí nhớ phiên làm việc.
+
+## MÔ HÌNH LÀM VIỆC NỘI BỘ (LOCAL WORKSPACE)
+- Dự án đang chạy trực tiếp trên ổ cứng nội bộ SSD.
+- Các thư mục môi trường nặng (`node_modules`, `.venv`, `.next`, `.turbo`) được cài đặt trực tiếp tại đây và **nằm ngoài luồng đồng bộ USB**.
+- Cứ thực thi lệnh cài đặt và lập trình bình thường — không cần lo lắng về USB hay junction link.
+- Đồng bộ mã nguồn giữa các máy là trách nhiệm của người dùng thông qua script riêng.
+
+Nếu bạn hiểu điều này, hãy áp dụng ngay lập tức vào mọi câu trả lời.

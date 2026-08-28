@@ -1,0 +1,49 @@
+{
+  "menu": {
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "tools": "Tools",
+    "machine": "Machine",
+    "window": "Window",
+    "help": "Help",
+    "open_project": "Open Project (.ycam)...",
+    "import_cad": "Import CAD (STEP/DXF)...",
+    "save_as": "Save As (.ycam)...",
+    "export_dxf": "Export DXF Drawing...",
+    "export_gcode": "Export G-Code...",
+    "settings": "Settings..."
+  },
+  "toolbar": {
+    "open_project": "Open Project",
+    "import_cad": "Import CAD",
+    "save_project": "Save Project",
+    "calc_holes": "Calculate Holes",
+    "processing": "Processing...",
+    "export_dxf": "Export DXF",
+    "post_gcode": "Post G-Code",
+    "fit_screen": "Fit to Screen"
+  },
+  "panels": {
+    "ops_manager": "OPERATIONS MANAGER",
+    "wcs_origin": "WCS ORIGIN (G54)",
+    "tool_setup": "TOOL SETUP (T_PLANE)",
+    "tool_no": "TOOL NO.",
+    "dia_mm": "DIA (MM)",
+    "spindle": "SPINDLE (S)",
+    "feed": "FEED (F)",
+    "peck": "PECK (Q)",
+    "z_safe": "Z SAFE",
+    "output": "OUTPUT",
+    "levels_manager": "LEVELS MANAGER",
+    "no_layers": "No layers",
+    "model": "Model:"
+  },
+  "canvas": {
+    "no_model": "NO MODEL LOADED",
+    "select_objs": "Select objects...",
+    "move_prompt": "MOVE Select base point or [Displacement]:",
+    "copy_prompt": "COPY Specify base point or [Displacement/mOde]:",
+    "dim_prompt": "DIM Specify first extension line origin:"
+  }
+}

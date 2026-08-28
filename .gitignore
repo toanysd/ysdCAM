@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+ENV/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+.next/
+
+# Compressed & Archive files
+*.rar
+*.zip
+*.7z
+*.tar.gz
+
+# Scratch / Debug / Logs
+temp_workspace/
+temp_ai/
+*.log
+*.tmp
+debug_holes.json
+read_reqs_out.txt
+reqs_06mm.txt
+user_messages.txt
+test_export_faces.dxf
+test_out.dxf
+
+# IDE / System files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

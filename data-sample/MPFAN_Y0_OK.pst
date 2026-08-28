@@ -1,0 +1,3315 @@
+[POST_VERSION] #DO NOT MOVE OR ALTER THIS LINE# V20.00 P0 E1 W20.00 T1510037127 M20.00 I0 O0
+# Post Name           : FUJIMETAL_Mori-1
+# Product             : Mill
+# Machine Name        : FUJIMETAL_Mori-1
+# Control Name        : Fanuc
+# Description         : Mori Vertical Mill
+# 4-axis/Axis subs.   : Yes
+# 5-axis              : No
+# Subprograms         : Yes
+# Executable          : MP 15.0
+#
+# WARNING: THIS POST IS GENERIC AND IS INTENDED FOR MODIFICATION TO
+# THE MACHINE TOOL REQUIREMENTS AND PERSONAL PREFERENCE.
+#
+# Associated File List$
+#
+# MORI_SEIKI_NV5000 FANUC18I 4X MILL.control
+# MORI_SEIKI_NV5000 FANUC18I 4X MILL.MMD
+# MORI_SEIKI_NV5000 FANUC18I 4X MILL MM.MMD
+#
+#
+# Associated File List$
+# ------------------------------------------- #
+prev_date       ## リビジョン(=日付)を記入    # ／／／ ポスト変更された方は, 必ず日付の変更をお願いします！！！
+     "_REV231213"                             # ←←← ポスト変更された方は, 必ず日付の変更をお願いします！！！
+# ------------------------------------------- #
+pheader$         #Call before start of file
+   fastmode$ = 0
+   pheader_2
+
+dsim_com_flg : 0
+
+# --------------------------------------------------------------------------
+# Revision log:
+# --------------------------------------------------------------------------
+# CNC 08/24/05  -  Initial post setup for Mastercam X
+# CNC 06/26/06  -  Initial post setup for Mastercam X2
+# CNC 02/26/07  -  Modified pwcs
+# CNC 11/02/07  -  Added prv_shftdrl$ = zero
+# CNC 08/05/08  -  X3 release - no changes made
+# CNC 03/05/09  -  Initial post update for Mastercam X4
+#
+# 110120 GT kawamura - リジットタップの調整
+#
+# 130628 GT kawamura - Mori-1とMori-2に分ける
+#
+# 130918 GT kawamura - 各種調整
+#
+# --------------------------------------------------------------------------
+# Features:     
+# --------------------------------------------------------------------------
+# This post supports Generic Fanuc output for 3 and 4 axis milling.
+# It is designed to support the features of Mastercam X Mill.
+#
+# NEW FEATURES FOR X:
+# - Variable initialization with CD_VAR are read directly from CD.  Changing these initial values
+#     in the post will not effect output.  These values are only processed during the update post routine.  
+# - Supports X comments including machine name, group name and group comment output (see pcomment2)
+# - Additional date, time and data path output options (see pheader)  
+# - Support for 10 additional canned text and new coolant options for X.  Coolant supported through
+#     existing canned text logic.
+# - Support for separate XY, XZ and YZ plane/arc variables (see Arc page in CD)
+#
+# --------------------------------------------------------------------------
+# Misc. Values:
+# --------------------------------------------------------------------------
+# Integers:
+#
+# mi1 - Work coordinate system 
+#        0 = Reference return is generated and G92 with the 
+#            X, Y and Z home positions at file head.
+#        1 = Reference return is generated and G92 with the 
+#            X, Y and Z home positions at each tool.
+#        2 = WCS of G54, G55.... based on Mastercam settings.
+#
+# mi2 - Absolute or Incremental positioning at top level
+#        0 = absolute
+#        1 = incremental
+#
+# mi3 - Select G28 or G30 reference point return.
+#        0 = G28
+#        1 = G30
+#
+# mi4 -  mi10 (NOT USED)
+#
+# Reals:
+#
+# mr1 - mr10 (NOT USED)
+#
+# --------------------------------------------------------------------------
+#Canned text:
+#    Entering cantext on a contour point from within Mastercam allows the
+#    following functions to enable/disable.
+#    Cantext value:
+#    1 = Program Stop = output the "M00" stop code
+#    2 = Optional Stop =  output the "M01" optional stop code
+#    3 = Block Delete on = turn on block delete codes in NC lines
+#    4 = Block Delete off = turn off block delete codes in NC lines
+#
+#Milling toolpaths (4 axis)
+#Layout:
+# The term "Reference View" refers to the coordinate system associated
+# with the Top view (Alt-F9, the upper gnomon of the three displayed).
+# Create the part drawing with the axis of rotation about the axis
+# of the "Reference View" according to the setting you entered for
+# 'vmc' (vertical or horizontal) and 'rot_on_x' (machine relative
+# axis of rotation).
+# vmc = 1 (vertical machine) uses the top toolplane as the base machine
+# view.
+# vmc = 0 (horizontal machine) uses the front toolplane as the base machine
+# view.
+# Relative to the machine matrix -
+# Rotation zero position is on the Z axis for rotation on X axis.
+# Rotation zero position is on the Z axis for rotation on Y axis.
+# Rotation zero position is on the X axis for rotation on Z axis.
+# The machine view rotated about the selected axis as a "single axis
+# rotation" are the only legal views for 4 axis milling.  Rotation
+# direction around the part is positive in the CCW direction when
+# viewed from the plus direction of the rotating axis.  Set the variable 
+# 'rot_ccw_pos' to indicate the signed direction.  Always set the work
+# origin at the center of rotation.
+#
+#Toolplane Positioning:
+# Create the Cplane and Tplane as the rotation of the machine view about 
+# the selected axis of rotation.  The toolplane is used to calculate
+# the position of the rotary axis.  This is the default setting.
+#
+#3 Axis Rotary (Polar)
+# Polar positioning is offered in Mastercam 3 axis toolpaths through the 
+# rotary axis options dialog.  The selected toolpath is converted to angle
+# and radius position.  The axis of rotation is forced to zero.
+#
+#Axis substitution:
+# Use the Rotary axis substitution by drawing the geometry flattened
+# from the cylinder.  The rotary axis button must be active for axis
+# substitution information to be output to the NCI file. The radius of
+# the rotary diameter is added to all the Z positions at output.  
+#
+#Simultaneous 4 Axis (11 gcode):
+# Full 4 axis toolpaths can be generated from various toolpaths under the 
+# 'multi-axis' selection (i.e. Rotary 4 axis). All 5 axis paths are
+# converted to 4 axis paths where only the angle about the rotation axis
+# is resolved. 
+#
+#Drill:
+# All drill methods are supported in the post.  See Simultaneous 4 Axis.
+#
+#Additional Notes:
+# 1) G54 calls are generated where the work offset entry of 0 = G54,
+#    1 = G55, etc.
+# 2) Metric is applied from the NCI met_tool variable.
+# 3) Incremental mode calculates motion from home position at toolchanges.
+#    The home position is used to define the last position of the tool
+#    for all toolchanges.  
+# 4) The variable 'absinc' is now pre-defined, set mi2 (Misc. Integer) for
+#    the 'top level' absolute/incremental program output.  Subprograms are
+#    updated through the Mastercam dialog settings for sub-programs.
+# 5) Always avoid machining to the center of rotation with rotary axis!
+# 6) Transform subprograms are intended for use with G54.. workshifts. 
+#
+# END_HEADER$
+#
+# --------------------------------------------------------------------------
+# Debugging and Factory Set Program Switches  
+# --------------------------------------------------------------------------
+#Define Constants
+m_one        := -1
+zero         := 0
+one          := 1
+two          := 2
+three        := 3
+four         := 4
+five         := 5
+c9k          := 9999
+
+fastmode$    : 1     #Enable Quick Post Processing, (set to no for debug)
+bug1$        : 0     #0=No display, 1=Generic list box, 2=Editor
+bug2$        : 40    #Append postline labels, non-zero is column position?
+#CNC<<FAIL>>bug3$        : 0     #Append whatline number to each NC line?
+#CNC<<MSG-ｴﾗｰ(179)>> この変数、ﾎﾟｽﾄﾌﾞﾛｯｸ、あるいはその他のｷｰﾜｰﾄﾞはもうｻﾎﾟｰﾄされていません
+bug4$        : 1     #Debug output with the tilde '~'.
+                     #A value greater the zero applies the variable formatting with
+                     #debug output (default is typically FS 1 but not a guarantee).
+                     #A value of zero gets the value directly with NO formatting.
+whatno$      : yes$   #Do not perform whatline branches? (leave as yes)
+
+linktolvar$  : 0     #Associate X tolerance variables to V9- variable?
+linkplnvar$  : 0     #Associate X plane specific variables to V9- variable?
+skp_lead_flgs$ : 0   #Do NOT use v9 style contour flags
+get_1004$    : 1     #Find gcode 1004 with getnextop?
+rpd_typ_v7$  : 0     #Use Version 7 style contour flags/processing?
+strtool_v7$  : 2     #Use Version 7+ toolname?
+tlchng_aft$  : 2     #Delay call to toolchange until move line 
+cant_tlchng$ : 1     #Ignore cantext entry on move with tlchng_aft 
+newglobal$   : 1     #Error checking for global variables
+getnextop$   : 3     #Build the next variable table
+
+# --------------------------------------------------------------------------
+# General Output Settings
+# --------------------------------------------------------------------------
+sub_level$   : 1     #CD_VAR Enable automatic subprogram support
+breakarcs$   : 2     #CD_VAR Break arcs, 0 = no, 1 = quadrants, 2 = 180deg. max arcs
+arctype$     : 2     #CD_VAR Arc center 1=abs, 2=St-Ctr, 3=Ctr-St, 4=unsigned inc.,
+                     #5 = R no sign, 6 = R signed neg. over 180
+do_full_arc$ : 0     #CD_VAR Allow full circle output? 0=no, 1=yes
+helix_arc$   : 2     #CD_VAR Support helix arc output, 0=no, 1=all planes, 2=XY plane only
+arccheck$    : 1     #CD_VAR Check for small arcs, convert to linear
+atol$        : 0.01  #CD_VAR Angularity tolerance for arccheck
+ltol$        : 0.002 #CD_VAR Length tolerance for arccheck
+vtol$        : 0.0001#System tolerance
+maxfeedpm    : 10000 #Limit for feed in inch/min  ## 変更 ## 101224 GT kawamura
+ltol_m       : 0.05  #Length tolerance for arccheck, metric
+vtol_m       : 0.0025#System tolerance, metric
+maxfeedpm_m  : 10000 #Limit for feed in mm/min
+force_wcs    : yes$  #Force WCS output at every toolchange?
+spaces$      : 1     #CD_VAR Number of spaces to add between fields
+omitseq$     : yes$  #CD_VAR Omit sequence numbers?
+seqmax$      : 9999  #CD_VAR Max. sequence number
+stagetool    : 0     #0 = Do not pre-stage tools Xoa dau cach sau M6, 1 = Stage tools
+use_gear     : 0     #Output gear selection code, 0=no, 1=yes 
+max_speed    : 10000 #Maximum spindle speed
+min_speed    : 50    #Minimum spindle speed
+nobrk$       : no$   #CD_VAR Omit breakup of x, y & z rapid moves
+progname$    : 1     #Use uppercase for program name (sprogname)
+
+tool_info    : 2     #Output tooltable information?
+                     #0 = Off - Do not output any tool comments or toolpable
+                     #1 = Tool comments only
+                     #2 = Tooltable in header - no tool comments at T/C
+                     #3 = Tooltable in header - with tool comments at T/C
+
+# --------------------------------------------------------------------------
+# Rotary Axis Settings
+# --------------------------------------------------------------------------
+vmc          : 1     #0 = Horizontal Machine, 1 = Vertical Mill 
+rot_on_x     : 1     #Default Rotary Axis Orientation 
+                     #0 = Off, 1 = About X, 2 = About Y, 3 = About Z 
+rot_ccw_pos  : 1     #Axis signed dir, 0 = CW positive, 1 = CCW positive
+index        : 0     #Use index positioning, 0 = Full Rotary, 1 = Index only
+ctable       : 5     #Degrees for each index step with indexing spindle
+use_frinv    : no$   #Use Inverse Time Feedrates in 4 Axis, (0 = no, 1 = yes)
+maxfrdeg     : 2000  #Limit for feed in deg/min
+maxfrinv     : 999.99#Limit for feed inverse time
+frc_cinit    : yes$  #Force C axis reset at toolchange
+ctol         : 225   #Tolerance in deg. before rev flag changes
+ixtol        : 0.01  #Tolerance in deg. for index error
+frdegstp     : 10    #Step limit for rotary feed in deg/min
+
+# --------------------------------------------------------------------------
+# Enable Canned Drill Cycle Switches
+# --------------------------------------------------------------------------
+usecandrill$ : yes$  #CD_VAR Use canned cycle for drill
+usecanpeck$  : yes$  #CD_VAR Use canned cycle for Peck
+usecanchip$  : yes$  #CD_VAR Use canned cycle for Chip Break
+usecantap$   : yes$  #CD_VAR Use canned cycle for Tap
+usecanbore1$ : yes$  #CD_VAR Use canned cycle for Bore1
+usecanbore2$ : yes$  #CD_VAR Use canned cycle for Bore2
+usecanmisc1$ : yes$  #CD_VAR Use canned cycle for Misc1
+usecanmisc2$ : yes$  #CD_VAR Use canned cycle for Misc2
+
+# --------------------------------------------------------------------------
+# Common User-defined Variable Initializations (not switches!)
+# --------------------------------------------------------------------------
+xia          : 0     #Formatted absolute value for X incremental calculations
+yia          : 0     #Formatted absolute value for Y incremental calculations
+zia          : 0     #Formatted absolute value for Z incremental calculations
+cia          : 0     #Formatted absolute value for C incremental calculations
+
+cuttype      : 0     #Cut type flag
+                     #0 = Tool Plane, 1 = Axis Subs,  2 = Polar, 3 = 4/5 axis
+bld          : 0     #Block delete active
+result       : 0     #Return value for functions
+sav_spc      : 0     #Save spaces
+sav_gcode    : 0     #Gcode saved 
+sav_absinc   : 0     #Absolute/Incremental Saved Value
+sav_coolant  : 0     #Coolant saved 
+sav_frc_wcs  : 0     #Force work offset flag saved
+toolchng     : 1     #On a toolchange flag 
+spdir2       : 1     #Copy for safe spindle direction calculation 
+cool_sel     : 0
+cool_off     : 0
+
+#Drill variables
+drlgsel      : -1    #Drill Select Initialize
+drillref     : 0     #Select drill reference
+peckacel$    : 0     #Fractional percent to reduce peck2 when usecan.. : no
+drlgcode     : 0     #Save Gcode in drill   
+sav_dgcode   : 0     #Drill gcode saved 
+
+#Subprogram variables
+mr_rt_actv   : 0     #Flag to indicate if G51/G68 is active                     
+                     #0=Off, 1=Toolchange, 2=Subprogram call/start, G68
+                     #3=Absolute start, both
+rt_csav      : 0     #C saved value
+end_sub_mny  : 0     #Many tool setting captured at transform sub end
+
+#Rotary/Index variables
+csav         : 0     #C saved value
+prvcabs      : 0     #Saved cabs from pe_inc_calc,
+                     #Used for rotary feed and direction calculations
+cdelta       : 0     #Calculation for angle change
+rev          : 0     #Calculation for deg/min
+sav_rev      : 0     #Saved revolution counter
+indx_out     : c9k   #Rotation direction calculation
+fmt     16  indx_mc  #Rotation direction calculation
+
+#Vector Constants for Rotatary Calculations
+aaxisx       : 1     #A axis rotation vector constant
+aaxisy       : 0     #A axis rotation vector constant
+aaxisz       : 0     #A axis rotation vector constant
+baxisx       : 0     #B axis rotation vector constant
+baxisy       : 1     #B axis rotation vector constant
+baxisz       : 0     #B axis rotation vector constant
+caxisx       : 0     #C axis rotation vector constant
+caxisy       : 0     #C axis rotation vector constant
+caxisz       : 1     #C axis rotation vector constant
+
+#Feedrate calculation variables
+frdelta      : 0     #Calculation for deg/min
+frinv        : 0     #Feedrate inverse time
+frdeg        : 0     #Feedrate deg/min actual
+prvfrdeg     : 0     #Feedrate deg/min actual
+ldelta       : 0     #Calculation for deg/min, linear
+cldelta      : 0     #Calculation for deg/min, linear and rotary
+circum       : 0     #Calculation for deg/min
+ipr_type     : 0     #Feedrate for Rotary, 0 = UPM, 1 = DPM, 2 = Inverse
+
+# --------------------------------------------------------------------------
+#String and string selector definitions for NC output
+# --------------------------------------------------------------------------
+#Misc. string definitions
+sopen_prn    : "("   #String for open parenthesis "(" 
+sclose_prn   : ")"   #String for close parenthesis ")"
+sdelimiter   : "|"   #String for delimiter
+sg95         : "G95" #Feed per rotation
+sm29         : "M29" #Rigid tapping preperation support function
+
+#Address string definitions
+strm         : "M"
+strn         : "N"
+stro         : "O"
+strp         : "P"
+srad         : "R"
+srminus      : "R-"
+sblank       : ""
+
+#Cantext string definitions (spaces must be padded here)
+sm00         : "M0"
+sm01         : "M1"
+strtextno    : ""
+strcantext   : ""
+
+#Transform mirror and rotate codes
+strns_mir_on  : "G51.1" #Programmable mirror image code
+strns_mir_off : "G50.1" #Programmable mirror image cancel code
+strns_rot_on  : "G68"   #Coordinate System Rotation
+strns_rot_off : "G69"   #Coordinate System Rotation Cancel
+
+# --------------------------------------------------------------------------
+# Error messages
+# --------------------------------------------------------------------------
+saxiswarn    : "WARNING-POST ROTARY AXIS ASSIGNMENT ('rot_on_x') OVERWRITTEN BY OPERATION"
+saxisoff     : "ERROR-POST ROTARY AXIS ASSIGNMENT ('rot_on_x') IS DISABLED"
+saxiserror   : "ERROR-INVALID ROTARY AXIS ASSIGNMENT ('rot_on_x') FOR CURRENT OPERATION"
+sindxerror   : "WARNING-INDEX ANGLE DOES NOT MATCH POST SETTING ('ctable')"
+stlorgerr    : "ERROR-TOOL ORIGIN DOES NOT MATCH CENTER OF ROTATION IN POLAR MILLING"
+shomeserror  : "ERROR-G92 WORK OFFSET ('mi1') DOES NOT SUPPORT TRANSFORM SUBPROGRAM"
+sprgnerror   : "ERROR-SUBPROGRAM NUMBER MATCHES THE MAIN PROGRAM NUMBER"
+
+# --------------------------------------------------------------------------
+# General G and M Code String select tables
+# --------------------------------------------------------------------------
+# Motion G code selection
+sg00    : "G0"       #Rapid
+sg01    : "G1"       #Linear feed
+sg02    : "G2"       #Circular interpolation CW 
+sg03    : "G3"       #Circular interpolation CCW 
+sg04    : "G4"       #Dwell
+sgcode  : ""         #Target string
+
+fstrsel sg00 gcode$ sgcode 5 -1
+# --------------------------------------------------------------------------
+# Select work plane G code
+sg17    : "G17"      #XY plane code 
+sg19    : "G19"      #YZ plane code 
+sg18    : "G18"      #XZ plane code 
+sgplane : ""         #Target string
+
+fstrsel sg17 plane$ sgplane 3 -1
+# --------------------------------------------------------------------------
+#Select english/metric code 
+sg20    : "G20"      #Inch code
+sg21    : "G21"      #Metric code
+smetric : ""         #Target string  
+
+fstrsel sg20 met_tool$ smetric 2 -1
+# --------------------------------------------------------------------------
+#Select reference return code 
+sg28    : "G28"      #First reference point return
+sg30    : "G30"      #Second reference point return
+sg28ref : ""         #Target string
+
+fstrsel sg28 mi3$ sg28ref 2 -1
+# --------------------------------------------------------------------------
+# Cutter compensation G code selection
+scc0    : "G40"      #Cancel cutter compensation
+scc1    : "G41"      #Cutter compensation left
+scc2    : "G42"      #Cutter compensation right
+sccomp  : ""         #Target string
+
+fstrsel scc0 cc_pos$ sccomp 3 -1
+# --------------------------------------------------------------------------
+# Canned drill cycle string select
+sg81    : "G81"      #drill      - no dwell 
+sg81d   : "G82"      #drill      - with dwell 
+sg83    : "G83"      #peck drill - no dwell 
+sg83d   : "G83"      #peck drill - with dwell 
+sg73    : "G73"      #chip break - no dwell 
+sg73d   : "G73"      #chip break - with dwell 
+sg84    : "G84"      #tap        - right hand
+sg84d   : "G74"      #tap        - left hand
+sg85    : "G85"      #bore #1    - no dwell 
+sg85d   : "G89"      #bore #1    - with dwell 
+sg86    : "G86"      #bore #2    - no dwell 
+sg86d   : "G86"      #bore #2    - with dwell 
+sgm1    : "G76"      #misc #1    - no dwell
+sgm1d   : "G76"      #misc #1    - with dwell
+sgm2    : "G84"      #rigid tap  - right hand
+sgm2d   : "G74"      #rigid tap  - left hand
+sgdrill : ""         #Target string
+
+fstrsel sg81 drlgsel sgdrill 16 -1
+# --------------------------------------------------------------------------
+# Select incremental or absolute G code 
+sg90    : "G90"      #Absolute code
+sg91    : "G91"      #Incremental code
+sgabsinc : ""        #Target string  
+
+fstrsel sg90 absinc$ sgabsinc 2 -1
+# --------------------------------------------------------------------------
+# Feed mode G code selection
+sg94    : "G94"      #UPM
+sg94d   : "G94"      #DPM, See pfcalc_deg if you use another gcode
+sg93    : "G93"      #Inverse
+sgfeed  : ""         #Target string
+
+fstrsel sg94 ipr_type sgfeed 3 -1
+# -------------------------------------------------------------------------- 
+#Canned drill cycle reference height
+sg98    : "G98"      #Reference at initht
+sg99    : "G99"      #Reference at refht     
+sgdrlref : ""        #Target string
+
+fstrsel sg98 drillref sgdrlref 2 -1   # Drill cycle G string select
+# --------------------------------------------------------------------------
+# Generate string for spindle 
+sm04    : "M4"       #Spindle reverse 
+sm05    : "M5"       #Spindle off     
+sm03    : "M3"       #Spindle forward 
+spindle : ""         #Target string
+
+fstrsel sm04 spdir2 spindle 3 -1
+# --------------------------------------------------------------------------
+# Coolant M code selection
+sm080     : ""
+sm080_off : ""
+sm08      : "M8"     #Coolant Flood 
+sm08_off  : "M9"     #Coolant Flood
+sm07      : "M8"     #Coolant Mist
+sm07_off  : "M9"     #Coolant Mist
+sm88      : "M88"    #Coolant Tool
+sm88_off  : "M89"    #Coolant Tool
+scoolant  : ""       #Target string
+
+fstrsel sm080 cool_sel scoolant 8 -1
+# --------------------------------------------------------------------------
+# Table rotation direction 
+# Table rotation direction, index 
+sindx_cw  : "M22"    #Rotate CW code 
+sindx_ccw : "M21"    #Rotate CCW code
+sindx_mc  : ""       #Target string
+
+fstrsel sindx_cw indx_mc sindx_mc 2 -1
+# --------------------------------------------------------------------------
+# Define the gear selection code
+flktbl  1       3       #Lookup table definition - table no. - no. entries
+        40      0       #Low gear range
+        41      400     #Med gear range
+        42      2250    #Hi gear range
+
+# --------------------------------------------------------------------------
+# Month selector
+smon0   : ""
+smon1   : "JAN."
+smon2   : "FEB."
+smon3   : "MAR."
+smon4   : "APR."
+smon5   : "MAY."
+smon6   : "JUN."
+smon7   : "JUL."
+smon8   : "AUG."
+smon9   : "SEP."
+smon10  : "OCT."
+smon11  : "NOV."
+smon12  : "DEC."
+smonth  : ""         #Target string
+
+fstrsel smon0 month$ smonth 13 -1
+# --------------------------------------------------------------------------
+# Format statements - n=nonmodal, l=leading, t=trailing, i=inc, d=delta
+# --------------------------------------------------------------------------
+#Default english/metric position format statements
+fs2 1   0.7 0.6      #Decimal, absolute, 7 place, default for initialize (:)
+fs2 2   0.4 0.3      #Decimal, absolute, 4/3 place
+fs2 3   0.4 0.3d     #Decimal, delta, 4/3 place
+#Common format statements
+fs2 4   1 0 1 0      #Integer, not leading
+fs2 5   2 0 2 0l     #Integer, force two leading
+fs2 6   3 0 3 0l     #Integer, force three leading
+fs2 7   4 0 4 0l     #Integer, force four leading
+fs2 9   0.1 0.1      #Decimal, absolute, 1 place
+fs2 10  0.2 0.2      #Decimal, absolute, 2 place
+fs2 11  0.3 0.3      #Decimal, absolute, 3 place
+fs2 12  0.4 0.4      #Decimal, absolute, 4 place
+#fs2 13  0.5 0.5     #Decimal, absolute, 5 place
+fs2 13  0.5 2 0l
+fs2 14  0.3 0.3d     #Decimal, delta, 3 place
+fs2 15  0.2 0.1      #Decimal, absolute, 2/1 place
+fs2 16  1 0 1 0n     #Integer, forced output
+fs2 17  0.2 0.3      #Decimal, absolute, 2/3 place (tapping feedrate)
+# These formats used for 'Date' & 'Time'
+fs2 18  2.2 2.2lt    #Decimal, force two leading & two trailing (time2)
+fs2 19  2 0 2 0t     #Integer, force trailing                   (hour)
+fs2 20  0 2 0 2lt    #Integer, force leading & trailing         (min)
+fs2 21  0 4 0 4t     #No decimal, absolute, four trailing
+
+# --------------------------------------------------------------------------
+# Toolchange / NC output Variable Formats
+# --------------------------------------------------------------------------
+fmt  "T" 4  t$          #Tool Number
+fmt  "T" 4  first_tool$ #First Tool Used 
+fmt  "T" 4  next_tool$  #Next Tool Used  
+fmt  "D" 4  tloffno$    #Diameter Offset Number
+fmt  "H" 4  tlngno$     #Length Offset Number
+fmt  "G" 4  g_wcs       #WCS G address
+fmt  "P" 4  p_wcs       #WCS P address
+fmt  "S" 4  speed       #Spindle Speed
+fmt  "M" 4  gear        #Gear range
+# --------------------------------------------------------------------------
+fmt  "N" 4  n$          #Sequence number
+fmt  "X" 2  xabs        #X position output
+fmt  "Y" 2  yabs        #Y position output
+fmt  "Z" 2  zabs        #Z position output
+fmt  "X" 3  xinc        #X position output
+fmt  "Y" 3  yinc        #Y position output
+fmt  "Z" 3  zinc        #Z position output
+fmt  "A" 11 cabs        #C axis position
+fmt  "A" 14 cinc        #C axis position
+fmt  "A" 4  indx_out    #Index position
+fmt  "R" 14 rt_cinc     #C axis position, G68
+fmt  "I" 3  iout        #Arc center description in X
+fmt  "J" 3  jout        #Arc center description in Y
+fmt  "K" 3  kout        #Arc center description in Z
+fmt  "R" 2  arcrad$     #Arc Radius
+fmt  "F" 4  feed        #Feedrate
+fmt  "P" 21 dwell$      #Dwell
+fmt  "M" 5  cantext$    #Canned text
+fmt  "F" 2  pitch       #Tap pitch (units per thread)
+# --------------------------------------------------------------------------
+#Move comment (pound) to output colon with program numbers
+fmt  "O" 7  progno$     #Program number
+#fmt ":" 7   progno$     #Program number
+fmt  "O" 7  main_prg_no$ #Program number
+#fmt ":" 7   main_prg_no$ #Program number
+fmt  "O" 7  sub_prg_no$ #Program number
+#fmt ":" 7   sub_prg_no$  #Program number
+fmt  "X" 2  sub_trnsx$  #Rotation point
+fmt  "Y" 2  sub_trnsy$  #Rotation point
+fmt  "Z" 2  sub_trnsz$  #Rotation point
+# --------------------------------------------------------------------------
+fmt  "Q" 2  peck1$      #First peck increment (positive)
+fmt  "Q" 2  shftdrl$    #Fine bore tool shift
+fmt  "R" 2  refht_a     #Reference height
+fmt  "R" 2  refht_i     #Reference height
+# --------------------------------------------------------------------------
+#fmt "TOOL - "       4   tnote     #Note format
+#fmt " DIA. OFF. - " 4   toffnote  #Note format
+#fmt " LEN. - "      4   tlngnote  #Note format
+#fmt " DIA. - "      1   tldia$    #Note format
+fmt "T"   4   tnote     #Note format
+fmt ", D" 4   toffnote  #Note format
+fmt ", H" 4   tlngnote  #Note format
+fmt ", M" 1   tldia$    #Note format
+# --------------------------------------------------------------------------
+fmt     4   year2       #Calculated year value
+fmt     18  time2       #Capture 24-hour time value into 'time2' variable
+fmt     19  hour        #Hour 
+fmt     20  min         #Minutes
+year2 = year$ + 2000
+
+# --------------------------------------------------------------------------
+# Tool Comment / Manual Entry Section
+# --------------------------------------------------------------------------
+pcoolant
+      cool_sel = coolant$ * 2 + fsg2(cool_off)
+      scoolant
+      !coolant$
+
+pfcoolant
+      cool_sel = coolant$ * 2 + fsg2(cool_off)
+      *scoolant
+      !coolant$
+
+ptoolcomment    #Comment for tool
+      tnote = t$
+      toffnote = tloffno$
+      tlngnote = tlngno$
+ #    sopen_prn, pstrtool, *tnote, *toffnote, *tlngnote, *tldia$, sclose_prn, e$
+      sopen_prn, ppredtool, " ", *tnote, *toffnote, *tlngnote, *tldia$, sclose_prn, e$
+
+ptoolcomment2    #Comment for tool
+      tnote = t$
+      toffnote = tloffno$
+      tlngnote = tlngno$
+ #    sopen_prn, pstrtool, *tnote, *toffnote, *tlngnote, *tldia$, sclose_prn, e$
+      sopen_prn, [if strtool$ = "", "- no tool name -", else, pstrtool], sclose_prn, e$
+
+pstrtool        #Comment for tool
+      if strtool$ <> sblank,
+        [
+        strtool$ = ucase(strtool$)
+ #      *strtool$, " "
+        *strtool$
+        ]
+
+pcomment$       #Comment from manual entry (must call pcomment2)
+      pcomment2 #Required if doing boolean 'if' logic testing!
+
+pcomment2       #Output Comment from manual entry
+      scomm$ = ucase (scomm$)
+      if gcode$ = 1005, sopen_prn, scomm$, sclose_prn, e$  #Manual entry - as comment
+      if gcode$ = 1006, scomm$, e$                         #Manual entry - as code
+      if gcode$ = 1007, sopen_prn, scomm$, sclose_prn      #Manual entry - as comment with move NO e$
+      if gcode$ = 1026, scomm$                             #Manual entry - as code with move NO e$
+      if gcode$ = 1008, sopen_prn, scomm$, sclose_prn, e$  #Operation comment
+      if gcode$ = 1051, sopen_prn, scomm$, sclose_prn, e$  #Machine name
+      if gcode$ = 1052, sopen_prn, scomm$, sclose_prn, e$  #Group comment
+      if gcode$ = 1053, sopen_prn, scomm$, sclose_prn, e$  #Group name
+      if gcode$ = 1054, sopen_prn, scomm$, sclose_prn, e$  #File Descriptor
+
+ptool_op  #opcode$
+           if tool_op$ = 0, "NOTHING"
+           if tool_op$ = 1, "RINKAKU"
+           if tool_op$ = 2, "DRILL"
+           if tool_op$ = 3, "POCKET"
+           if tool_op$ = 4, "Version8 MIRROR / REVOLVE / MOVE"
+           if tool_op$ = 5, "SURFACE ROUGH PARALLEL"
+           if tool_op$ = 6, "SURFACE ROUGH RADIAL"
+           if tool_op$ = 7, "SURFACE ROUGH PROJECTION"
+           if tool_op$ = 8, "SURFACE ROUGH FLOWLINE"
+           if tool_op$ = 9, "SURFACE ROUGH TOUKOUSEN"
+           if tool_op$ = 10, "SURFACE ROUGH POCKET"
+           if tool_op$ = 11, "SURFACE FINISH PARALLEL"
+           if tool_op$ = 12, "SURFACE FINISH RADIAL"
+           if tool_op$ = 13, "SURFACE FINISH PROJECTION"
+           if tool_op$ = 14, "SURFACE FINISH FLOWLINE"
+           if tool_op$ = 15, "SURFACE FINISH TOUKOUSEN"
+           if tool_op$ = 16, "ROLLDIE"#"DRILL 5AX C-HOOK"
+           if tool_op$ = 17, "SWARF 5AX MANUAL"
+           if tool_op$ = 18, "CIRCLE MILL"#"RINKAKU 5AX Version8"
+           if tool_op$ = 19, "POINT TOOLPATH"
+           if tool_op$ = 20, "TRIM"
+           if tool_op$ = 21, "RULED"
+           if tool_op$ = 22, "KAITEN"
+           if tool_op$ = 23, "MOJI"
+           if tool_op$ = 24, "SWEEP 2D"
+           if tool_op$ = 25, "SWEEP 3D"
+           if tool_op$ = 26, "COONS"
+           if tool_op$ = 27, "LOFT"
+           if tool_op$ = 28, "DRILL 5AX"
+           if tool_op$ = 29, "RINKAKU 5AX"
+           if tool_op$ = 30, "PROJECT TO FLAT SURFACE"
+           if tool_op$ = 31, "PROJECT TO SILINDER"
+           if tool_op$ = 32, "PROJECT TO BALL"
+           if tool_op$ = 33, "PROJECT TO CONE"
+           if tool_op$ = 34, "PROJECT TO DANMEN"
+           if tool_op$ = 35, "PROJECT TO SURFACE"
+           if tool_op$ = 36, "NOT LINKED TOUKOUSEN"
+           if tool_op$ = 37, "NOT LINKED DRILL"
+           if tool_op$ = 38, "NOT LINKED POCKET"
+           if tool_op$ = 39, "SURFACE FINISH PENCIL"
+           if tool_op$ = 40, "SURFACE FINISH LEFT-OVER"
+           if tool_op$ = 41, "SURFACE FINISH STEEP"
+           if tool_op$ = 42, "SURFACE FINISH SHALLOW"
+           if tool_op$ = 43, "SURFACE FINISH SCALLOP"
+           if tool_op$ = 44, "SURFACE ROUGH PLANGE"
+           if tool_op$ = 45, "FLOWLINE 5AX"
+           if tool_op$ = 46, "KAITEN 4AX"
+           if tool_op$ = 47, "ASCII NCI MERGE"
+           if tool_op$ = 48, "5AX SWARF"
+           if tool_op$ = 49, "ROLLDIE"
+           if tool_op$ = 51, "TOP FACE RINKAKU"
+           if tool_op$ = 52, "CROSS RINKAKU"
+           if tool_op$ = 53, "C-AXIS RINKAKU"
+           if tool_op$ = 54, "NOT LINKED DRILL(NOT USE)"
+           if tool_op$ = 55, "SURFACE DRILL"
+           if tool_op$ = 56, "CROSS DRILL"
+           if tool_op$ = 57, "C-AXIS DRILL"
+           if tool_op$ = 100, "THREAD MILL"
+           if tool_op$ = 101, "CONSISTENT OPERATION PARAMETER EDIT"
+           if tool_op$ = 102, "SHOMEN SESSAKU"
+           if tool_op$ = 105, "SLOT MILL"
+           if tool_op$ = 106, "HELIX BORE"
+           if tool_op$ = 107, "SURFACE ARADORI OIKOMI"
+           if tool_op$ = 110, "FUKUGOUMEN 5AX"
+           if tool_op$ = 134, "2D-HIGHSPEED TOOLPATH"
+           if tool_op$ = 416, "ENGRAVING"
+           if tool_op$ = 440, "ADVANCED MULTI-AXIS"
+
+fmt     1   tcr$
+ppredtool  # 工具情報  ## 071029 GT kawamura
+           if tool_typ$ =  0, "MITEIGI"
+           if tool_typ$ =  1, "CENTER DRILL"
+           if tool_typ$ =  2, "SPOT DRILL"
+           if tool_typ$ =  3, "DRILL"
+           if tool_typ$ =  4, "TAP-RH"
+           if tool_typ$ =  5, "TAP-LH"
+           if tool_typ$ =  6, "REAMER"
+           if tool_typ$ =  7, "BORING BAR"
+           if tool_typ$ =  8, "COUNTER BORE"
+           if tool_typ$ =  9, "COUNTER SINK"
+           if tool_typ$ = 10, "FLAT ENDMILL"
+           if tool_typ$ = 11, "BALL ENDMILL"
+           if tool_typ$ = 12, "MENTORI FRAISE"
+           if tool_typ$ = 13, "FACE MILL"
+           if tool_typ$ = 14, "T-SLOT MILL"
+           if tool_typ$ = 15, "FILLET CUTTER"
+           if tool_typ$ = 16, "ARIMIZO CUTTER"
+           if tool_typ$ = 17, "TAPER MILL"
+           if tool_typ$ = 18, " CANDY MILL"
+           if tool_typ$ = 19, *tcr$, "R", " BULLNOSE"
+           if tool_typ$ = 20, "BLOCK DRILL"
+           if tool_typ$ = 21, "ENGRAVE TOOL"
+           if tool_typ$ = 22, "BRADPT DRILL"
+
+#↓↓ 《次工具呼出設定》---------------------------------- #
+bldnxtool$ : 1                                             #
+tooltable$ : 1                                             #
+                                                           #
+#↓↓ 次の変数をpwrtt$の前に追加してください。             #
+tcnt : 0       # 工具の本数                                #
+tlchgcnt : 0   # 工具交換の回数                            #
+ttmp : 99999   # 前工具の保持                              #
+toollist : 1   # 1 = ツールをリスト表示する                #
+               # 0 = ツールを工具交換ごとに表示する        #
+                                                           #
+pwrtt$                                                     #
+  if abs(t$) <> abs(ttmp), tlchgcnt = tlchgcnt + 1         #
+  ttmp = t$                                                #
+                                                           #
+ntls : 0        ### 工具交換カウンタ変数                   #
+                                                           #
+pnexttool       ### 次工具出力プロシージャ                 #
+      ntls = ntls + 1                                      #
+      if (stagetool = one) & (tlchgcnt <> ntls),           #
+       n$, *next_tool$, "(NEXT TOOL CALL)"                 #
+       else, ""   #←最終次工具の指定個所                  #
+      ### tlchgcnt は工具交換の回数を保持しています        #
+      ### 同一工具を飛びOP番号で使っていても保持されます   #
+#↑↑ ---------------------------------------------------- #
+
+#↓↓《設問》## 130114 GT kawamura
+G28G30 : 1
+sG28G30 : 28
+fmt "G"  4  sG28G30
+fq 1 G28G30 "[1]=G28, 又は [2]=G30 を入力し、'Enter'キーを叩いてください.[0=中止]"
+
+pqq1 ## G28/G30の切り替え ## 130114 GT kawamura
+    q1
+#@@@@@@@@@
+    if G28G30 = 0,
+      [
+      result = mprint(serr_G28G30)
+      n$, "ポスト処理を中止しました.", e$
+      exitpost$
+      ]
+      else,
+#@@@@@@@@@
+      if G28G30 = 1, sG28G30 = 28
+      else,
+       if G28G30 = 2, sG28G30 = 30
+
+serr_G28G30  : "ユーザーによってポスト処理が中止されました. "
+pqq1 ?  
+#CNC<<FAIL>>pqq1 : 0
+#CNC<<MSG-ｴﾗｰ(788)>> 他のﾀｲﾌﾟﾘｽﾄ内にﾗﾍﾞﾙが見つかりました
+
+sav_op_id : 0
+# --------------------------------------------------------------------------
+# Start of File and Toolchange Setup
+# --------------------------------------------------------------------------
+ptime           #Convert 24-hour time format into 12-hour AM/PM format
+      if time$ >= 13, time2 = (time$ - 12)
+      else, time2 = time$
+      hour = int(time2), min = frac(time2)
+      *hour, ":", *min,
+      if time$ > 12, " PM"
+      else, " AM"
+
+fmt  13  day$
+fmt  13  month$
+fmt  13  year$
+
+pheader_2         #Call before start of file
+      pqq1 ## G28/G30の切り替え ## 130114 GT kawamura
+
+      "%", e$
+      if progno$ = 0 ,progno$ = 1
+      *progno$, "(",sprogname$, ")", e$				#*progno$, "(",sprogname$, *smcname$, ")", e$
+#     *e$							#Cach dong
+      sav_spc = spaces$
+      spaces$ = 0
+
+      "(", *smcname$, ")", e$			#"(PROGRAM NAME: ", sprogname$, ")", e$
+#     "(MACHINE NAME: ", snamepst$, prev_date, ")", e$
+      "(DATE&TIME: ", *year$, "/", *month$, "/", *day$, ",", time$, ")", e$
+
+      spaces$ = sav_spc
+
+psof0$           #Start of file for tool zero                        
+      psof$
+
+psof$            #Start of file for non-zero tool number             
+      pcuttype
+      toolchng = one
+      if n$ = 100, n$ = 1
+      if coolant$ = 0, coolant$ = 1
+      sub_trns_flg=0
+      if ntools$ = one,
+        [
+        #skip single tool outputs, stagetool must be on
+        stagetool = m_one
+        !next_tool$
+        ]
+
+      n$, "M9", e$
+      n$, "M5", e$
+
+      n$, *sgcode, *sgplane, scc0, "G49", "G80", *sgabsinc, e$
+      sav_absinc = absinc$
+      if mi1$ <= one, #Work coordinate system
+        [
+        absinc$ = one
+#        pfbld, n$, sgabsinc, *sG28G30, "Z0.", e$
+#        pfbld, n$, *sG28G30, "Y0.", e$
+#        pfbld, n$, "G92", *xh$, *yh$, *zh$, e$
+        absinc$ = sav_absinc
+        ]
+
+      n$, "G91", *sG28G30, "Z0.", e$
+      n$, *sG28G30, "Y0.", e$
+
+      if tool_typ$=4|tool_typ$=5, n$, "M0", e$
+       else, n$, "M1", e$
+      pcom_moveb
+      c_mmlt$ #Multiple tool subprogram call
+
+      n$, *t$, ptoolcomment2
+      n$, "M6", pnexttool, e$
+      *n$, ptoolcomment
+      n$, "(", ptool_op, ")", e$
+#      n$, pnexttool, e$
+
+      comment$
+      pcan
+
+     #if coolant$ > 2, n$, pfcoolant, e$
+      pindex
+      if mi1$ > one, absinc$ = zero
+
+      pcan1, n$, pwcs, *sgabsinc, *sgplane, *sgcode,
+     #[if ref_point, "X0.", "Y0.", else, pfxout, pfyout], #*ref_point, 
+      [if xform_op_id$<>op_id$, "X0.", "Y0.", else, pfxout, pfyout],
+      pcout, e$
+      n$, "G43", pfzout, *tlngno$, e$
+      n$, [if not(tool_typ$=4|tool_typ$=5), *speed, *spindle], pgear, strcantext, e$
+     #[if tool_op$ = 2, n$, pfcoolant, ], e$
+                        n$, pfcoolant, e$
+
+      absinc$ = sav_absinc
+      pcom_movea
+      toolchng = zero
+      c_msng$ #Single tool subprogram call
+
+      sav_op_id = op_id$            ## op_id 保持
+
+ptlchg0$         #Call from NCI null tool change (tool number repeats)
+      pcuttype
+      pcom_moveb
+      if coolant$ = 0, coolant$ = 1
+      c_mmlt$ #Multiple tool subprogram call
+
+    if op_id$ <> sav_op_id,
+      [
+      sub_trns_flg=0
+      *n$, "(", ptool_op, "/ ", pstrtool, ")", e$
+      comment$
+      pcan
+     #result = newfs(15, feed)  #Reset the output format for 'feed'
+      n$, sgplane, e$
+      pspindchng
+      n$, pcoolant, e$
+      ]
+
+      if mi1$ > one & workofs$ <> prv_workofs$,
+        [
+        sav_absinc = absinc$
+        absinc$ = zero
+        n$, pwcs, *sgabsinc, *sgplane, *sgcode, pfxout, pfyout, pfzout, pcout, e$
+        pe_inc_calc
+        ps_inc_calc
+        absinc$ = sav_absinc
+        ]
+      if cuttype = zero, ppos_cax_lin
+      if gcode$ = one, plinout
+      else, prapidout
+      pcom_movea
+      c_msng$ #Single tool subprogram call
+
+      if tool_op$ = 2, n$, pfzout, pfcoolant, e$
+
+      sav_op_id = op_id$            ## op_id 保持
+
+ptlchg$          #Tool change
+      pspindle
+      pcuttype
+      toolchng = one
+
+      if coolant$ = 0, coolant$ = 1
+      sub_trns_flg=0
+
+      if tool_typ$=4|tool_typ$=5, n$, "M0", e$
+       else, n$, "M1", e$
+
+      n$, *t$, ptoolcomment2
+      n$, "M6", pnexttool, e$
+      *n$, ptoolcomment
+      n$, "(", ptool_op, ")", e$
+#      n$, pnexttool, e$
+
+      if mi1$ = one, #Work coordinate system
+        [
+#        pfbld, n$, *sG28G30, "Y0.", e$
+#        pfbld, n$, "G92", *xh$, *yh$, *zh$, e$
+        ]
+
+#      n$, "G91", *sG28G30, "Z0.", e$
+#      n$, *sG28G30, "Y0.", e$
+
+      pcom_moveb
+      c_mmlt$ #Multiple tool subprogram call
+
+      comment$
+      pcan
+     #result = newfs(15, feed)  #Reset the output format for 'feed'
+     #if coolant$ > 2, n$, pfcoolant, e$
+      pindex
+      sav_absinc = absinc$
+      if mi1$ > one, absinc$ = zero
+
+      pcan1, n$, pwcs, *sgabsinc, *sgplane, *sgcode,
+     #[if ref_point, "X0.", "Y0.", else, pfxout, pfyout], #*ref_point, 
+      [if xform_op_id$<>op_id$, "X0.", "Y0.", else, pfxout, pfyout],
+      pcout, e$
+      n$, "G43", pfzout, *tlngno$, e$
+      n$, [if not(tool_typ$=4|tool_typ$=5), *speed, *spindle], pgear, strcantext, e$
+     #[if tool_op$ = 2, n$, pfcoolant, ], e$
+                        n$, pfcoolant, e$
+
+      absinc$ = sav_absinc
+      pcom_movea
+      toolchng = zero
+      c_msng$ #Single tool subprogram call
+
+      sav_op_id = op_id$            ## op_id 保持
+
+pretract        #End of tool path, toolchange
+      sav_absinc = absinc$
+      absinc$ = one
+      sav_coolant = coolant$
+      coolant$ = prv_coolant$
+      cool_off = one
+      #cc_pos is reset in the toolchange here
+      cc_pos$ = zero
+      gcode$ = zero
+      spdir2 = 1
+      pcan
+
+#     if nextop$ = 1003, ## NCデータ末尾での出力形式
+#       [
+#       n$, sccomp, psub_end_mny, spindle, e$
+#       n$, pcoolant, strcantext, e$
+#       pcan1, n$, sgabsinc, sgcode, *sG28G30, "Z0.", e$
+#       pcan1, n$, "G90", "G53", "X-550.", e$
+#       pcan1, n$, "G91", *sG28G30, "Y0.", e$
+#       ]
+#      else,
+#       [
+#       n$, sccomp, psub_end_mny, e$
+#       n$, pcoolant, strcantext, e$
+#       pcan1, n$, sgabsinc, sgcode, *sG28G30, "Z0.", spindle, e$
+#       ]
+
+     if nextop$ = 1003, ## NCデータ末尾での出力形式 ## 変更 ## 091113 GT kawamura
+       [
+       n$, sccomp, *sm05, psub_end_mny, e$
+       n$, pcoolant, strcantext, e$
+       pcan1, n$, "G91", *sG28G30, "Z0.", e$
+       pcan1, n$, *sG28G30, "Y0.", e$
+      #pcan1, n$, "G90", "G53", "X-400.", e$  ## 変更 ## 100707 GT kawamura
+       ]
+      else,
+       [
+       n$, sccomp, *sm05, psub_end_mny, e$
+       n$, pcoolant, strcantext, e$
+       pcan1, n$, "G91", *sG28G30, "Z0.", e$
+       pcan1, n$, *sG28G30, "Y0.", e$
+      #pcan1, n$, "G90", "G53", "X-400.", e$  ## 変更 ## 100707 GT kawamura
+       ]
+
+      #n, *sG28G30, "Y0.", protretinc, e
+      pcan2
+      absinc$ = sav_absinc
+      coolant$ = sav_coolant
+      cool_off = zero
+
+protretinc      #Reset the C axis revolution counter
+      if frc_cinit & rot_on_x,
+        [
+        rev = zero
+        sav_rev = zero
+        cabs = zero
+        csav = zero
+        indx_out = zero
+        if index, e$, pindxcalc, pindex
+        else, *cabs
+        prvcabs = zero
+        !csav, !cabs
+        ]
+
+peof0$           #End of file for tool zero               
+      peof$
+
+peof$            #End of file for non-zero tool           
+      pretract
+      #Remove pound character to output first tool with staged tools
+      #if stagetool = one, n, *first_tool, e
+ #    n$, "G53", "Y0.", e$
+      n$, "M30", e$
+      mergesub$
+      clearsub$
+      mergeaux$
+      clearaux$
+      comment$
+      "%", e$
+
+pwcs            #G54+ coordinate setting at toolchange
+      if mi1$ > one,
+        [
+        sav_frc_wcs = force_wcs
+        if sub_level$ > 0, force_wcs = zero
+        if workofs$ <> prv_workofs$ | (force_wcs & toolchng),
+          [
+          if workofs$ < 6,
+            [
+            g_wcs = workofs$ + 54
+            *g_wcs
+            ]
+          else,
+            [
+            p_wcs = workofs$ - five
+            "G54.1", *p_wcs
+            ]
+          ]
+        force_wcs = sav_frc_wcs
+        !workofs$
+        ]
+
+pgear           #Find spindle gear from lookup table
+      if use_gear = one,
+        [
+        gear = frange (one, speed)
+        *gear
+        ]
+
+#Toolchange setup
+pspindchng      #Spindle speed change
+      if prv_spdir2 <> spdir2 & prv_speed <> zero, n$, *sm05, e$
+      if prv_speed <> speed | prv_spdir2 <> spdir2,
+        [
+        if speed, n$, *speed, *spindle, pgear, e$
+        ]
+      !speed, !spdir2
+
+pspindle        #Spindle speed calculations for RPM
+      speed = abs(ss$)
+      if maxss$ = zero | maxss$ > max_speed, maxss$ = max_speed
+      #zero indicates spindle off (not a mistake)
+      if speed,
+        [
+        if speed > max_speed, speed = maxss$
+        if speed < min_speed, speed = min_speed
+        ]
+      spdir2 = fsg3(spdir$)
+
+pq$              #Setup post based on switch settings
+      if stagetool = one, bldnxtool$ = one
+      #Rotaxtyp = 1 sets initial matrix to top
+      #Rotaxtyp = -2 sets initial matrix to front
+      if vmc, rotaxtyp$ = one
+      else, rotaxtyp$ = -2
+
+ptoolend$        #End of tool path, before reading new tool data               
+      !speed, !spdir2
+
+ptlchg1002$      #Call at actual toolchange, end last path here                        
+      if cuttype <> one, sav_rev = rev #Axis Sub does not update to rev
+      pspindle
+      whatline$ = four #Required for vector toolpaths
+      if gcode$ = 1000,
+        [
+        #Null toolchange
+        ]
+      else,
+        [
+        #Toolchange and Start of file
+        if gcode$ = 1002,
+          [
+          #Actual toolchange
+          pretract
+          ]
+        if stagetool = one, prv_next_tool$ = m_one
+        prv_xia = vequ(xh$)
+        prv_feed = c9k
+        ]
+
+# --------------------------------------------------------------------------
+# Motion NC output
+# --------------------------------------------------------------------------
+#The variables for absolute output are xabs, yabs, zabs.
+#The variables for incremental output are xinc, yinc, zinc.
+# --------------------------------------------------------------------------
+sub_trns_flg : 0
+
+psGcode  ## Gゼロ出力設定 ## 130918 GT kawamura
+     if esub_chn_no$, ## 変形移動サブプログラム有効の場合のみ
+       [
+       if sub_trns_flg=0, *sgcode
+        else, `sgcode
+       ]
+       else, `sgcode
+
+psub_trns  ## サブプログラム内特有改行指令 ## 130918 GT kawamura
+     if esub_chn_no$, ## 変形移動サブプログラム有効の場合のみ
+       [
+       if sub_trns_flg=0,
+         [
+         if not(tool_op$=2), e$ ## ドリルツールパスを除いて改行
+         ]
+       sub_trns_flg=1
+       ]
+
+prapidout       #Output to NC of linear movement - rapid
+      pcan1, pbld, n$, sgplane, psGcode, sgabsinc, pccdia, ## 130918 GT kawamura
+        pxout, pyout, psub_trns,                           ## 130918 GT kawamura
+        pzout, pcout, strcantext, pcoolant, e$
+
+plinout         #Output to NC of linear movement - feed
+      pcan1, n$, sgfeed, sgplane, `sgcode, sgabsinc, pccdia,
+        pxout, pyout, pzout, pcout, feed, strcantext, pcoolant, e$
+
+pcirout         #Output to NC of circular interpolation
+      pcan1, n$, `sgfeed, sgplane, sgcode, sgabsinc, pccdia,
+        pxout, pyout, pzout, pcout, parc, feed, strcantext, pcoolant, e$
+
+pcom_moveb      #Common motion preparation routines, before
+      pxyzcout
+      ps_inc_calc
+
+pncoutput       #Movement output
+      pcom_moveb
+      comment$
+      pcan
+      if cuttype = zero, ppos_cax_lin #Toolplane rotary positioning
+      if gcode$ = zero, prapidout
+      if gcode$ = one, plinout
+      if gcode$ > one & gcode$ < four, pcirout
+      if mr_rt_actv, #Restore absolute/incremental for G51/G68
+        [
+        absinc$ = sav_absinc
+        mr_rt_actv = zero
+        ]
+      pcom_movea
+
+pcom_movea      #Common motion preparation routines, after
+      pcan2
+      pe_inc_calc
+
+pdwl_spd$        #Call from NCI gcode 4
+      pspindle
+      comment$
+      pspindchng
+      pcan
+      if fmtrnd(dwell$), pcan1, n$, *sgcode, *dwell$, strcantext, e$
+      else, pcan1, n$, strcantext, e$
+      pcan2
+
+prapid$          #Output to NC of linear movement - rapid               
+      pncoutput
+
+pzrapid$         #Output to NC of linear movement - rapid Z only    
+      pncoutput
+
+plin$            #Output to NC of linear movement - feed                    
+      pncoutput
+
+pz$              #Output to NC of linear movement - feed Z only          
+      pncoutput
+
+pmx$             #Output to NC of vector NCI          
+      pncoutput
+
+pcir$            #Output to NC of circular interpolation                                
+      pncoutput
+
+#Pre-process rotary motion control flags
+pmx0$            #5 axis gcode setup
+      if drillcur$ = zero,
+        [
+        if fr$ = -2, gcode$ = zero
+        else, gcode$ = one
+        ]
+
+plin0$           #Linear movement, mill motion test                                
+      pmotion_su
+
+pcir0$           #Circular interpolation, mill arc motion test                                
+      pmotion_su
+
+# --------------------------------------------------------------------------
+# Motion output components
+# --------------------------------------------------------------------------
+pbld            #Canned text - block delete
+      if bld, '/'
+
+pfbld           #Force - block delete
+      "/"
+
+pccdia          #Cutter Compensation
+      #Force Dxx#   
+      if prv_cc_pos$ <> cc_pos$ & cc_pos$, prv_tloffno$ = c9k
+      sccomp
+      if cc_pos$, tloffno$
+
+pfxout          #Force X axis output
+      if absinc$ = zero, *xabs, !xinc
+      else, *xinc, !xabs
+
+pxout           #X output
+      if absinc$ = zero, xabs, !xinc
+      else, xinc, !xabs
+
+pfyout          #Force Y axis output
+      if absinc$ = zero, *yabs, !yinc
+      else, *yinc, !yabs
+
+pyout           #Y output
+      if absinc$ = zero, yabs, !yinc
+      else, yinc, !yabs
+
+pfzout          #Force Z axis output
+      if absinc$ = zero, *zabs, !zinc
+      else, *zinc, !zabs
+
+pzout           #Z output
+      if absinc$ = zero, zabs, !zinc
+      else, zinc, !zabs
+
+pfcout          #Force C axis output 
+      if index = zero & rot_on_x,
+        [
+        if absinc$ = zero, *cabs, !cinc
+        else, *cinc, !cabs
+        ]
+
+pcout           #C axis output
+      if index = zero & rot_on_x,
+        [
+        if absinc$ = zero, cabs, !cinc
+        else, cinc, !cabs
+        ]
+
+pindex          #Index output
+      if index & rot_on_x,
+        [
+        n$, `sindx_mc, indx_out, e$
+        !cabs, !cinc
+        ]
+
+parc            #Select the arc output
+      if (plane$ = zero & (arctype$ = one | arctype$ = four)) |   #XY Plane
+        (plane$ = one & (arctypeyz$ = one | arctypeyz$ = four)) | #YZ Plane
+        (plane$ = two & (arctypexz$ = one | arctypexz$ = four)),  #XZ Plane
+        [
+        result = newfs(two, iout)
+        result = newfs(two, jout)
+        result = newfs(two, kout)
+        ]
+      else,
+        [
+        result = newfs(three, iout)
+        result = newfs(three, jout)
+        result = newfs(three, kout)
+        ]
+      if (plane$ = 0 & arctype$ < five) | (plane$ = 1 & arctypeyz$ < five) |
+        (plane$ = 2 & arctypexz$ < five) | full_arc_flg$ | arc_pitch$,
+        [
+        #Arc output for IJK
+        # If you do NOT want to force out the I,J,K values,
+        # remove the "*" asterisks on the *i, *j, *k 's below...
+        if plane$ = zero, *iout, *jout, kout #XY plane code - G17
+        if plane$ = one, iout, *jout, *kout  #YZ plane code - G19
+        if plane$ = two, *iout, jout, *kout  #XZ plane code - G18
+        !i$, !j$, !k$
+        ]
+      else,
+        [
+        #Arc output for R
+        if abs(sweep$)<=180 | (plane$ = 0 & arctype$ = five) | (plane$ = 1 & arctypeyz$ = five) |
+          (plane$ = 2 & arctypexz$ = five), result = nwadrs(srad, arcrad$)
+        else, result = nwadrs(srminus, arcrad$)
+        *arcrad$
+        ]
+
+ppos_cax_lin    #Position the rotary axis before move - rapid
+      if index, pindex
+      else,
+        [
+        if fmtrnd(prv_cabs) <> fmtrnd(cabs) & rot_on_x,
+          [
+          sav_gcode = gcode$
+          gcode$ = zero
+          n$, sgcode, pcout, e$
+          !cia
+          ps_cinc_calc
+          gcode$ = sav_gcode
+          ]
+        ]
+
+# --------------------------------------------------------------------------
+# Drilling
+# --------------------------------------------------------------------------
+pdrill0$         #Pre-process before drill call
+      sav_dgcode = gcode$ #Capture gcode for 5 axis drill
+
+pdrlcommonb     #Canned Drill Cycle common call, before
+      if initht$ <> refht$, drillref = zero
+      else, drillref = one
+      if sav_dgcode = 81,
+        [
+        result = newfs(two, zinc)
+        if drillcyc$ = three, drlgsel = fsg1(-ss$) + drillcyc$ * two
+        else, drlgsel = fsg2(dwell$) + drillcyc$ * two
+        prv_refht_a = c9k
+        prv_refht_i = c9k
+        prv_dwell$ = zero
+        prv_shftdrl$ = zero
+        ]
+      if cuttype = three, sav_dgcode = gcode$
+      else, z$ = depth$
+      if cuttype = one, prv_zia = initht$ + (rotdia$/two)
+      else, prv_zia = initht$
+      pcom_moveb
+      feed = fr_pos$
+      comment$
+      pcan
+      #5 axis must map the true Z, correct Z calculation here
+      if cuttype = three,
+        [
+        prv_zia = zabs + (-depth$) + initht$
+        zia = fmtrnd(zabs)
+        zinc = zia - prv_zia
+        ]
+
+prdrlout        #R drill position
+      if cuttype = one, refht_a = refht$ + (rotdia$ / two)
+      else, refht_a = refht$
+      refht_i = refht$ - initht$
+      if cuttype = three, refht_a = w$
+      if absinc$ = zero, refht_a, !refht_i
+      else, refht_i, !refht_a
+
+pk0  ## サブプロ時のみ"K0"出力
+      if drl_subprg_enabled, "K0"
+
+pdrill$          #Canned Drill Cycle
+      pdrlcommonb
+      pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+        prdrlout, dwell$, *feed, strcantext, pk0, e$
+      pcom_movea
+
+ppeck$           #Canned Peck Drill Cycle
+      pdrlcommonb
+      pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+        prdrlout, *peck1$, *feed, strcantext, pk0, e$
+      pcom_movea
+
+pchpbrk$         #Canned Chip Break Cycle
+      pdrlcommonb
+      pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+        prdrlout, *peck1$, *feed, strcantext, pk0, e$
+      pcom_movea
+
+ptap$            #Canned Tap Cycle
+      pdrlcommonb
+      result = newfs(17, feed)  # Set for tapping Feedrate format
+      pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+        prdrlout, *feed, strcantext, pk0, e$
+      pcom_movea
+
+pbore1$          #Canned Bore #1 Cycle
+      pdrlcommonb
+      pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+        prdrlout, dwell$, *feed, strcantext, pk0, e$
+      pcom_movea
+
+pbore2$          #Canned Bore #2 Cycle
+      pdrlcommonb
+      pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+        prdrlout, *feed, strcantext, pk0, e$
+      pcom_movea
+
+pmisc1$          #Canned Misc #1 Cycle
+      pdrlcommonb
+      pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+        prdrlout, shftdrl$, dwell$, *feed, strcantext, pk0, e$
+      pcom_movea
+
+pmisc2$          #Canned Rigid Tapping Cycle ## リジットタップ追加 ## 100701 GT kawamura
+      pdrlcommonb
+      #RH/LH based on spindle direction
+ #    n$, sg95, e$
+      n$, sm29, *speed, e$
+      if met_tool$, pitch = n_tap_thds$  #Tap pitch (mm  per thread)
+      else, pitch = 1/n_tap_thds$        #Tap pitch (inches per thread)
+ #    pcan1, n$, *sgdrlref, *sgdrill, pxout, pyout, pfzout, pcout,
+      pcan1, n$, *sgdrlref, [if tool_typ$=5, "G74", else, "G84"], pxout, pyout, pfzout, pcout,
+ #      prdrlout, *pitch, !feed, strcantext, e$
+        prdrlout, !pitch, *feed, strcantext, pk0, e$  ## 変更 ## 110120 GT kawamura
+      pcom_movea
+
+pdrill_2$        #Canned Drill Cycle, additional points
+      pdrlcommonb
+      pcan1, n$, pxout, pyout, pzout, pcout, prdrlout, dwell$,
+        feed, strcantext, e$
+      pcom_movea
+
+ppeck_2$         #Canned Peck Drill Cycle
+      pdrill_2$
+
+pchpbrk_2$       #Canned Chip Break Cycle
+      pdrill_2$
+
+ptap_2$          #Canned Tap Cycle
+      pdrill_2$
+
+pbore1_2$        #Canned Bore #1 Cycle
+      pdrill_2$
+
+pbore2_2$        #Canned Bore #2 Cycle
+      pdrill_2$
+
+pmisc1_2$        #Canned Misc #1 Cycle
+      pdrill_2$
+
+pmisc2_2$        #Canned Misc #2 Cycle
+      pdrill_2$
+
+pdrlcst$         #Custom drill cycles 8 - 19 (user option)
+      #Use this postblock to customize drilling cycles 8 - 19
+      pdrlcommonb
+      "CUSTOMIZABLE DRILL CYCLE ", pfxout, pfyout, pfzout, pfcout, e$
+      pcom_movea
+
+pdrlcst_2$       #Custom drill cycles 8 - 19, additional points (user option)     
+      #Use this postblock to customize drilling cycles 8 - 19
+      pdrlcommonb
+      "CUSTOMIZABLE DRILL CYCLE ", pfxout, pfyout, pfzout, pfcout, e$
+      pcom_movea
+
+pcanceldc$       #Cancel canned drill cycle
+      result = newfs(three, zinc)
+      z$ = initht$
+      if cuttype = one, prv_zia = initht$ + (rotdia$/two)
+      else, prv_zia = initht$
+      pxyzcout
+      !zabs, !zinc
+      prv_gcode$ = zero
+      pcan
+      pcan1, n$, "G80", strcantext, e$
+      pcan2
+
+# --------------------------------------------------------------------------
+#Subprogram postblocks
+#sub_trnstyp - 0=mirror, 1=rotate, 2=scale, 3=translate
+#sub_trnmthd (mirror) - 0=X axis, 1=Y axis, 2=line
+#sub_trnmthd (rotate) - 0=tplane, 1=tplane origin only, 2=coordinates
+# --------------------------------------------------------------------------
+psub_call_m$     #Call to main level, single tool
+     #psub_call_trans
+      result = nwadrs(strp, sub_prg_no$)
+      sub_prg_no$ = sub_prg_no$ + mi10$ #Add sub number offset  #@@@@@@@@@#
+      if progno$ = sub_prg_no$, result = mprint(sprgnerror)
+      pbld, n$, "M98", *sub_prg_no$, e$
+
+psub_call_mm$    #Call to main level, multiple tools
+      psub_call_trans
+
+psub_call_trans #Translate level calls from toolchange, user
+      if mi1$ <= one, result = mprint(shomeserror)
+      sav_absinc = absinc$
+      pindex
+      #Mirror or Rotate Coord's
+      if sub_trnstyp$ = zero | (sub_trnstyp$ = one & mr_rt_actv),
+        [
+        #The original pattern is not mirrored or rotated
+        if sub_sec_no$,
+          [
+          absinc$ = zero
+          if sub_trnstyp$, psub_rotate
+          else, psub_mirror
+          ]
+        mr_rt_actv = three
+        ]
+      else, #Translate
+        [
+        if sub_mny_t$,
+          [
+          if mi1$ > one, absinc$ = zero
+          n$, *sgcode, *sgabsinc, pwcs, pfxout, pfyout, pfzout,
+            pfcout, e$
+          pe_inc_calc
+          ps_inc_calc
+          ]
+        ]
+      absinc$ = sav_absinc
+      result = nwadrs(strp, main_prg_no$)
+      if progno$ = main_prg_no$, result = mprint(sprgnerror)
+      n$, "M98", *main_prg_no$, e$
+      prv_feed = c9k #Force feed in sub
+
+psub_mirror     #Mirror start code, user
+      #Mirror Y axis
+      if sub_trnmthd$, n$, *sgabsinc, strns_mir_on, *sub_trnsx$, e$
+      #Mirror X axis
+      else, n$, *sgabsinc, strns_mir_on, *sub_trnsy$, e$
+
+psub_rotate     #Rotate start code, user
+      n$, *sgcode, *sgabsinc, strns_rot_on, *sub_trnsx$, *sub_trnsy$,
+        [absinc$ = one], *sgabsinc, *rt_cinc, e$
+
+psub_st_m$       #Header in main level
+      result = nwadrs(stro, main_prg_no$)
+      " ", e$
+     #*main_prg_no$, e$
+      result = nwadrs(stro, sub_prg_no$)  #@@@@@@@@@# 130912 GT kawamura
+      *sub_prg_no$, comment$, e$          #@@@@@@@@@# 130912 GT kawamura
+      #G51/G68 requires absolute position on first move
+      if mr_rt_actv & absinc$ = one,
+        [
+        sav_absinc = absinc$
+        absinc$ = zero
+        prv_absinc$ = m_one
+        prv_xabs = m_one
+        prv_yabs = m_one
+        ]
+#      else, pbld, n$, sgabsinc, e$
+      n$, *sgabsinc, [if tool_op$=2, e$]  ## 130912 GT kawamura
+
+psub_end_m$      #End in main level
+      n$, "M99", e$
+      prv_absinc$ = m_one
+      #Reset update variables for subs at main level
+      #Mirror or Rotate cancel, output is forced
+      if (sub_trnstyp$ = zero & esub_sec_no$ > zero)
+        | (sub_trnstyp$ = one & esub_sec_no$ = esub_totl_no$-one
+        & sub_trnmthd$ = two),
+        [
+        subout$ = zero
+        no_nc_out$ = m_one
+        sav_absinc = absinc$
+        #Mirror cancel
+        if sub_trnstyp$ = zero,
+          [
+          absinc$ = zero
+          n$, *sgabsinc, strns_mir_off, *sub_trnsx$, *sub_trnsy$, e$
+          ]
+        else, #Rotate cancel
+          [
+          n$, strns_rot_off, e$
+          ]
+        absinc$ = sav_absinc
+        no_nc_out$ = zero
+        ]
+      end_sub_mny = sub_mny_t$
+
+psub_end_mny    #End in main level for many tools sub, user
+      #Check for coming out of xform with stage tool.
+      if end_sub_mny & stagetool = one,
+        [
+        *t$
+        end_sub_mny = zero
+        ]
+
+psub_call_s$     #Call to sub level
+      result = nwadrs(strp, sub_prg_no$)
+      sub_prg_no$ = sub_prg_no$ + 1000 #Add sub number offset
+      if progno$ = sub_prg_no$, result = mprint(sprgnerror)
+      n$, "M98", *sub_prg_no$, e$
+
+psub_st_s$       #Header in sub leveln
+      result = nwadrs(stro, sub_prg_no$)
+      " ", e$
+      *sub_prg_no$, e$
+      n$, sgabsinc, e$
+
+psub_end_s$      #End in sub level
+      n$, "M99", e$
+      prv_absinc$ = -1
+
+# --------------------------------------------------------------------------
+# Canned Text 
+# --------------------------------------------------------------------------
+pcan            #Canned text - before output call
+      strcantext = sblank
+      if cant_no$ > zero,
+        [
+        if cant_pos1$ = zero | cant_pos1$ = three, pcant_1
+        if cant_pos2$ = zero | cant_pos2$ = three, pcant_2
+        if cant_pos3$ = zero | cant_pos3$ = three, pcant_3
+        if cant_pos4$ = zero | cant_pos4$ = three, pcant_4
+        if cant_pos5$ = zero | cant_pos5$ = three, pcant_5
+        if cant_pos6$ = zero | cant_pos6$ = three, pcant_6
+        if cant_pos7$ = zero | cant_pos7$ = three, pcant_7
+        if cant_pos8$ = zero | cant_pos8$ = three, pcant_8
+        if cant_pos9$ = zero | cant_pos9$ = three, pcant_9
+        if cant_pos10$ = zero | cant_pos10$ = three, pcant_10
+        if cant_pos11$ = zero | cant_pos11$ = three, pcant_11
+        if cant_pos12$ = zero | cant_pos12$ = three, pcant_12
+        if cant_pos13$ = zero | cant_pos13$ = three, pcant_13
+        if cant_pos14$ = zero | cant_pos14$ = three, pcant_14
+        if cant_pos15$ = zero | cant_pos15$ = three, pcant_15
+        if cant_pos16$ = zero | cant_pos16$ = three, pcant_16
+        if cant_pos17$ = zero | cant_pos17$ = three, pcant_17
+        if cant_pos18$ = zero | cant_pos18$ = three, pcant_18
+        if cant_pos19$ = zero | cant_pos19$ = three, pcant_19
+        if cant_pos20$ = zero | cant_pos20$ = three, pcant_20
+        n$, strcantext, e$
+        strcantext = sblank
+        ]
+
+pcan1           #Canned text - with move
+      strcantext = sblank
+      if cant_no$ > zero,
+        [
+        if cant_pos1$ = one | cant_pos1$ = four, pcant_1
+        if cant_pos2$ = one | cant_pos2$ = four, pcant_2
+        if cant_pos3$ = one | cant_pos3$ = four, pcant_3
+        if cant_pos4$ = one | cant_pos4$ = four, pcant_4
+        if cant_pos5$ = one | cant_pos5$ = four, pcant_5
+        if cant_pos6$ = one | cant_pos6$ = four, pcant_6
+        if cant_pos7$ = one | cant_pos7$ = four, pcant_7
+        if cant_pos8$ = one | cant_pos8$ = four, pcant_8
+        if cant_pos9$ = one | cant_pos9$ = four, pcant_9
+        if cant_pos10$ = one | cant_pos10$ = four, pcant_10
+        if cant_pos11$ = one | cant_pos11$ = four, pcant_11
+        if cant_pos12$ = one | cant_pos12$ = four, pcant_12
+        if cant_pos13$ = one | cant_pos13$ = four, pcant_13
+        if cant_pos14$ = one | cant_pos14$ = four, pcant_14
+        if cant_pos15$ = one | cant_pos15$ = four, pcant_15
+        if cant_pos16$ = one | cant_pos16$ = four, pcant_16
+        if cant_pos17$ = one | cant_pos17$ = four, pcant_17
+        if cant_pos18$ = one | cant_pos18$ = four, pcant_18
+        if cant_pos19$ = one | cant_pos19$ = four, pcant_19
+        if cant_pos20$ = one | cant_pos20$ = four, pcant_20
+        ]
+      if cstop$, strcantext = strcantext + sm00
+      if cgstop$, strcantext = strcantext + sm01
+      #Output of strcantext occurs at the end of the output line 
+
+pcan2           #Canned text - after output call
+      strcantext = sblank
+      if cant_no$ > zero,
+        [
+        if cant_pos1$ = two | cant_pos1$ = five, pcant_1
+        if cant_pos2$ = two | cant_pos2$ = five, pcant_2
+        if cant_pos3$ = two | cant_pos3$ = five, pcant_3
+        if cant_pos4$ = two | cant_pos4$ = five, pcant_4
+        if cant_pos5$ = two | cant_pos5$ = five, pcant_5
+        if cant_pos6$ = two | cant_pos6$ = five, pcant_6
+        if cant_pos7$ = two | cant_pos7$ = five, pcant_7
+        if cant_pos8$ = two | cant_pos8$ = five, pcant_8
+        if cant_pos9$ = two | cant_pos9$ = five, pcant_9
+        if cant_pos10$ = two | cant_pos10$ = five, pcant_10
+        if cant_pos11$ = two | cant_pos11$ = five, pcant_11
+        if cant_pos12$ = two | cant_pos12$ = five, pcant_12
+        if cant_pos13$ = two | cant_pos13$ = five, pcant_13
+        if cant_pos14$ = two | cant_pos14$ = five, pcant_14
+        if cant_pos15$ = two | cant_pos15$ = five, pcant_15
+        if cant_pos16$ = two | cant_pos16$ = five, pcant_16
+        if cant_pos17$ = two | cant_pos17$ = five, pcant_17
+        if cant_pos18$ = two | cant_pos18$ = five, pcant_18
+        if cant_pos19$ = two | cant_pos19$ = five, pcant_19
+        if cant_pos20$ = two | cant_pos20$ = five, pcant_20
+        n$, strcantext, e$
+        strcantext = sblank
+        ]
+
+pcant_1         #Canned text - output call
+      cantext$ = cant_val1$
+      pcant_out
+
+pcant_2         #Canned text - output call
+      cantext$ = cant_val2$
+      pcant_out
+
+pcant_3         #Canned text - output call
+      cantext$ = cant_val3$
+      pcant_out
+
+pcant_4         #Canned text - output call
+      cantext$ = cant_val4$
+      pcant_out
+
+pcant_5         #Canned text - output call
+      cantext$ = cant_val5$
+      pcant_out
+
+pcant_6         #Canned text - output call
+      cantext$ = cant_val6$
+      pcant_out
+
+pcant_7         #Canned text - output call
+      cantext$ = cant_val7$
+      pcant_out
+
+pcant_8         #Canned text - output call
+      cantext$ = cant_val8$
+      pcant_out
+
+pcant_9         #Canned text - output call
+      cantext$ = cant_val9$
+      pcant_out
+
+pcant_10        #Canned text - output call
+      cantext$ = cant_val10$
+      pcant_out
+
+pcant_11        #Canned text - output call
+      cantext$ = cant_val11$
+      pcant_out
+
+pcant_12        #Canned text - output call
+      cantext$ = cant_val12$
+      pcant_out
+
+pcant_13        #Canned text - output call
+      cantext$ = cant_val13$
+      pcant_out
+
+pcant_14        #Canned text - output call
+      cantext$ = cant_val14$
+      pcant_out
+
+pcant_15        #Canned text - output call
+      cantext$ = cant_val15$
+      pcant_out
+
+pcant_16        #Canned text - output call
+      cantext$ = cant_val16$
+      pcant_out
+
+pcant_17        #Canned text - output call
+      cantext$ = cant_val17$
+      pcant_out
+
+pcant_18        #Canned text - output call
+      cantext$ = cant_val18$
+      pcant_out
+
+pcant_19        #Canned text - output call
+      cantext$ = cant_val19$
+      pcant_out
+
+pcant_20        #Canned text - output call
+      cantext$ = cant_val20$
+      pcant_out
+
+pcant_out       #Canned text - build the string for output
+      #Assign string select type outputs
+      if cantext$ = three, bld = one
+      if cantext$ = four, bld = zero
+      #Build the cantext string
+      if cantext$ = one, strcantext = strcantext + sm00
+      if cantext$ = two, strcantext = strcantext + sm01
+      if cantext$ > four,
+        [
+        strtextno = no2str(cantext$)
+        strcantext = strcantext + strm + strtextno
+        ]
+
+# --------------------------------------------------------------------------
+# Position calculations, generally these do not need to be modified
+# --------------------------------------------------------------------------
+pmiscint$        #Capture the top level absinc for subprograms
+      if sub_level$ <= zero, absinc$ = mi2$
+      #Disable cutpos2 if not 4 axis, saves time
+      if rot_on_x = zero, cutpos2$ = m_one
+
+pmotion_su      #Motion Setup (Set brklinestype & linarc)
+      brklinestype$ = zero
+      linarc$ = zero
+      if rot_on_x,
+        [
+        if cuttype = one, linarc$ = one  #Axis subs
+        if cuttype = two, #Polar
+          [
+          brklinestype$ = rotary_axis$ + three
+          linarc$ = one
+          ]
+        ]
+
+pcuttype   #Determine the cut type
+      #cuttype (0 = Tool Plane, 1 = Axis Subs,  2 = Polar, 3 = 4/5 axis)
+      cuttype = rotary_type$
+      if cuttype = three, cuttype = zero
+      if mill5$,
+        [
+        if rot_on_x = zero, result = mprint(saxisoff)
+        cuttype = three
+        ]
+      if rotary_axis$,
+        [
+        if rotary_axis$ <> rot_on_x, result = mprint(saxiswarn)
+        rot_on_x = rotary_axis$
+        ]
+      #Check for Tool Origin in Polar Milling
+      if cuttype = two & (tox$ | toy$ | toz$), result = mprint(stlorgerr)
+      #Transform Rotate, set mr_rt_actv if user selected 'coordinates' 
+      if sub_trnstyp$ = one & sub_trnmthd$ = two,
+        [
+        #Calculate the rotation incremental angle for G68
+        rt_csav = atan2(sub_m2$, sub_m1$)
+        rt_cinc = prv_rt_csav - rt_csav
+        while rt_cinc > 180, rt_cinc = rt_cinc - 360
+        while rt_cinc < -180, rt_cinc = rt_cinc + 360
+        if rot_ccw_pos = one, rt_cinc = -rt_cinc
+        !rt_csav
+        if sub_sec_no$, mr_rt_actv = two
+        else, mr_rt_actv = one
+        ]
+      else, mr_rt_actv = zero
+      pfcalc_u_min
+      pmotion_su
+
+pxyzcout        #Map coordinates
+      if rot_on_x,
+        [
+        if cuttype = zero, pxyzcout0    #Toolplane Positioning
+        if cuttype = one, pxyzcout1     #Axis Substitution
+        if cuttype = two, pxyzcout2     #Polar Conversion
+        if cuttype = three, pxyzcout3   #Simulatneous 4 axis (Multi-axis)
+        if rot_ccw_pos = one, csav = -csav
+        if mr_rt_actv <> two,
+          [
+          pcoutrev
+          if index, pindxcalc
+          pfcalc
+          ]
+        else, feed = fr_pos$
+        ]
+      else,
+        [
+        xabs = vequ(x$)
+        iout = vequ(i$)
+        feed = fr_pos$
+        ]
+
+       if sim_type$ = 2, ## 追加 ## 121203 GT kawamura
+         [
+          if dsim_com_flg=0,
+          [
+          if fastmode$=1, result = mprint(serr_dsim_com)
+          dsim_com_flg=1
+          ]
+         ]
+
+serr_dsim_com  : "<<お願い>>；ポスト修正されましたら, お手数ですがポスト25行目の'prev_date'を本日日付にご変更くださいネ！(UserSIMではこのメッセージは表示されません/このメッセージを非表示にするには'fastmode$'を0にします)"
+
+pxyzcout0       #Toolplane Positioning
+      xabs = vequ(x$)
+      iout = vequ(i$)
+      if rot_on_x = two, csav = -c$
+      else, csav = c$
+
+pxyzcout1       #Axis substitution
+      if rot_on_x = one, #X axis substitution
+        [
+        xabs = x$
+        yabs = zero
+        zabs = z$ + (rotdia$ / two)
+        csav =  y$ * (360 / (pi$ * rotdia$))
+        ]
+      else, #Y axis substitution
+        [
+        xabs = zero
+        yabs = y$
+        zabs = z$ + (rotdia$ / two)
+        csav =  x$ * (360 / (pi$ * rotdia$))
+        ]
+      if (rot_ccw_pos = 0 & rotaxis_dir$ = 1) |
+        (rot_ccw_pos = 1 & rotaxis_dir$ = 0), csav = -csav
+
+pxyzcout2       #polar interpolation
+      #Drill polar is toolplane drilling toward center
+      #if not a coincident axis
+      #Also, Capture initial index position for Polar Milling
+      if (opcode$ = three & rot_on_x <> three), pxyzcout0
+      else,
+        [
+        if rot_on_x = one, #X axis rotation
+          [
+          csav = atan2(y$, z$)   #Z+ zero
+          axisx$ = vequ(aaxisx)
+          xabs = rotp(csav, x$)
+          ]
+        if rot_on_x = two, #Y axis rotation
+          [
+          csav = atan2(-x$, z$)   #Z+ zero
+          axisx$ = vequ(baxisx)
+          xabs = rotp(csav, x$)
+          ]
+        if rot_on_x = three, #Z axis rotation
+          [
+          csav = atan2(-y$, x$)   #X+ zero 
+          axisx$ = vequ(caxisx)
+          xabs = rotp(csav, x$)
+          ]
+        csav = csav + c$
+        ]
+
+pxyzcout3       #Multisurf rotary axis motion
+      if rot_on_x = one, #Multisurf Rotary about X
+        [
+        csav = atan2 (vtooly$, vtoolz$)
+        axisx$ = vequ (aaxisx)
+        ]
+      if rot_on_x = two, #Multisurf Rotary about Y
+        [
+        csav = atan2 (-vtoolx$, vtoolz$)
+        axisx$ = vequ (baxisx)
+        ]
+      xabs = rotp (csav, x$)
+      u$ = rotp (csav, u$)
+      csav = csav + c$
+
+pcoutrev        #Rotary axis revolution calculation (Modify for wind-up)
+      cdelta = csav - prv_csav
+      while abs(cdelta) > ctol, #If motion exceeds ctol, add wind-up
+        [
+        if cdelta > zero,
+          [
+          rev = rev - one
+          cdelta = cdelta - 360
+          ]
+        else,
+          [
+          rev = rev + one
+          cdelta = cdelta + 360
+          ]
+        ]
+      if cuttype <> one, cabs = rev * 360 + csav
+      else, cabs = sav_rev * 360 + csav
+      !csav
+
+pindxcalc       #Index move calculations, direction is shortest
+      #Check if in tolerance
+      cdelta = frac(abs(csav)/ctable)
+      if cdelta > ixtol & cdelta < 1-ixtol, result = mprint(sindxerror)
+      cdelta = prvcabs - cabs
+      #Phase shift delta 10 revolutions, check odd/even
+      if frac(int((cdelta + 3600)/180)/two), indx_mc = one
+      else, indx_mc = zero
+      #Set range 0-360
+      indx_out = csav
+      while indx_out < 0, indx_out = indx_out + 360
+      while indx_out > 360, indx_out = indx_out - 360
+
+#Feedrate calculations
+pfcalc          #Feedrate calculations, gcode 0 does not evaluate
+      if gcode$ <> zero,
+        [
+        if fmtrnd(cabs) = prvcabs | index, pfcalc_u_min
+        else,
+          [
+          if cuttype = one & (cutpos2$ <= one | cutpos2$ = four),
+          pfcalc_u_min
+          else, pfclc_deg_inv
+          ]
+        if ipr_type <> prv_ipr_type, prv_feed = c9k
+        ]
+
+pfcalc_u_min    #Feedrate unit/min
+      ipr_type = zero
+      feed = fr_pos$
+      if feed > maxfeedpm, feed = maxfeedpm
+      prvfrdeg = feed
+
+pfclc_deg_inv   #Feedrate deg/min
+      circum = zabs * two * pi$
+      if circum = zero, circum = c9k          #Don't allow Zero
+      ldelta = sqrt((xabs-prv_xabs)^2+(yabs-prv_yabs)^2+(zabs-prv_zabs)^2)
+      cdelta = ((abs(cabs - prvcabs))/360)*circum
+      if ldelta = zero, cldelta = cdelta
+      else, cldelta = sqrt(cdelta^two + ldelta^two)
+      if cldelta = zero, cldelta = c9k
+      if use_frinv,
+        [
+        #Feedrate inverse calculation
+        ipr_type = two
+        result = force(feed) #Always force feed
+        if cuttype = three, cldelta = sqrt((x$-prv_x$)^2+(y$-prv_y$)^2+(z$-prv_z$)^2)
+        frinv = fr_pos$/cldelta
+        if frinv > maxfrinv, frinv = maxfrinv
+        feed = frinv
+        ]
+      else,
+        [
+        #Feedrate deg/min control and calculation
+        ipr_type = zero  #Change to ipr_type = one to force new DPM
+        frdeg = abs(cdelta/cldelta) * abs(fr_pos$ * (360/circum))
+        if abs(frdeg - prvfrdeg) > frdegstp | ipr_type <> prv_ipr_type,
+          [
+          #Control output of frdeg
+          prvfrdeg = frdeg
+          feed = frdeg
+          ]
+        if frdeg > maxfrdeg, feed = maxfrdeg
+        ]
+
+#Incremental calculations
+ps_inc_calc     #Incremental calculations, start
+      xia = fmtrnd(xabs)
+      yia = fmtrnd(yabs)
+      zia = fmtrnd(zabs)
+      xinc = vsub (xia, prv_xia)
+      ps_cinc_calc
+
+ps_cinc_calc    #Incremental calculations, start rotary              
+      cia = fmtrnd(cabs)
+      cinc = cia - prv_cia
+
+pe_inc_calc     #Incremental calculations, end
+      prvcabs = fmtrnd(cabs) #Avoid updating until called explicitly
+      !xia, !yia, !zia, !cia
+      !x$, !y$, !z$, !cc_pos$, !cutpos2$
+
+# --------------------------------------------------------------------------
+# Parameter read postblocks:
+# --------------------------------------------------------------------------
+pparameter$     #Read operation parameters
+      # 参照点の有効無効を取得
+      if prmcode$ = 15106, ref_point = rpar(sparameter$, 1)
+
+      # ドリルパラメタのサブプロのチェックが入っているかを確認
+      if prmcode$ = 15212, drl_subprg_enabled = rpar(sparameter$, 1)
+
+      # サブプログラムにチェックが入っているか取得
+      if prmcode$=15378, sub_enabled = rpar(sparameter$, 1)
+
+ref_point : 0  ## 参照点の有効無効を取得 ## 130830 GT kawamuwa
+drl_subprg_enabled : 0
+sub_enabled : 0
+# --------------------------------------------------------------------------
+# POST TEXT 
+# --------------------------------------------------------------------------
+#[CTRL_MILL|FUJIMETAL_Mori-1]
+[CTRL_TEXT_XML_BEGIN]  # Post text edits MUST be made with Control Definition Manager. The entire post must be encoded in the local code page plus the XML below despite UTF-8 tag.
+<?xml version="1.0" encoding="UTF-8"?>
+<mp_xml_post_text>
+	<control>
+		<control_label>CTRL_MILL|DEFAULT</control_label>
+		<language>ja-JP</language>
+		<misc_integers>
+			<misc_1>
+				<text>ワーク座標系 [0-1=G92, 2=G54's]</text>
+				<value>2</value>
+			</misc_1>
+			<misc_2>
+				<text>絶対/相対, トップ レベル [0=ABS, 1=INC]</text>
+			</misc_2>
+			<misc_3>
+				<text>""</text>
+			</misc_3>
+			<misc_4>
+				<text>""</text>
+			</misc_4>
+			<misc_5>
+				<text>""</text>
+			</misc_5>
+			<misc_6>
+				<text>""</text>
+			</misc_6>
+			<misc_7>
+				<text>""</text>
+			</misc_7>
+			<misc_8>
+				<text>""</text>
+			</misc_8>
+			<misc_9>
+				<text>""</text>
+			</misc_9>
+			<misc_10>
+				<text>ｻﾌﾞﾌﾟﾛ 開始/増分値 [数値入力]</text>
+				<value>10</value>
+			</misc_10>
+		</misc_integers>
+		<misc_reals>
+			<misc_1>
+				<text>""</text>
+			</misc_1>
+			<misc_2>
+				<text>""</text>
+			</misc_2>
+			<misc_3>
+				<text>""</text>
+			</misc_3>
+			<misc_4>
+				<text>""</text>
+			</misc_4>
+			<misc_5>
+				<text>""</text>
+			</misc_5>
+			<misc_6>
+				<text>""</text>
+			</misc_6>
+			<misc_7>
+				<text>""</text>
+			</misc_7>
+			<misc_8>
+				<text>""</text>
+			</misc_8>
+			<misc_9>
+				<text>""</text>
+			</misc_9>
+			<misc_10>
+				<text>""</text>
+			</misc_10>
+		</misc_reals>
+		<simple_drill>
+			<description>
+				<text>G81/G82 ドリル/座ぐり</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<first_peck>
+				<text>""</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>""</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>""</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+			<shift>
+				<text>""</text>
+			</shift>
+		</simple_drill>
+		<peck_drill>
+			<description>
+				<text>G83 ペックドリル</text>
+			</description>
+			<dwell>
+				<text>""</text>
+			</dwell>
+			<first_peck>
+				<text>ペック</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>ペック量減算値</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>最終切り込み量</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+			<shift>
+				<text>""</text>
+			</shift>
+		</peck_drill>
+		<chip_break>
+			<description>
+				<text>G73 切りくず除去</text>
+			</description>
+			<dwell>
+				<text>""</text>
+			</dwell>
+			<first_peck>
+				<text>ペック量</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>ペック減算値</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>最終切り込み量</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+			<shift>
+				<text>""</text>
+			</shift>
+		</chip_break>
+		<tap>
+			<description>
+				<text>G74/G84 タップ</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<first_peck>
+				<text>""</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>""</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>""</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+			<shift>
+				<text>""</text>
+			</shift>
+		</tap>
+		<bore1>
+			<description>
+				<text>G85 中繰り #1 (退避)</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<first_peck>
+				<text>""</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>""</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>""</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+			<shift>
+				<text>""</text>
+			</shift>
+		</bore1>
+		<bore2>
+			<description>
+				<text>G86 中繰り #2 (主軸停止,早送り退避)</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<first_peck>
+				<text>""</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>""</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>""</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+			<shift>
+				<text>""</text>
+			</shift>
+		</bore2>
+		<misc1>
+			<description>
+				<text>G76 精密ボア(シフト)</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<first_peck>
+				<text>""</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>""</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>""</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+		</misc1>
+		<misc2>
+			<description>
+				<text>リジットタップ</text>
+			</description>
+			<dwell>
+				<text>""</text>
+			</dwell>
+			<first_peck>
+				<text>""</text>
+			</first_peck>
+			<subsequent_peck>
+				<text>""</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>""</text>
+			</peck_clearance>
+			<retract_amount>
+				<text>""</text>
+			</retract_amount>
+			<shift>
+				<text>""</text>
+			</shift>
+		</misc2>
+		<drill_cycle_9>
+			<description>
+				<text>カスタム サイクル 9</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_9>
+		<drill_cycle_10>
+			<description>
+				<text>カスタム サイクル 10</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_10>
+		<drill_cycle_11>
+			<description>
+				<text>カスタム サイクル 11</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_11>
+		<drill_cycle_12>
+			<description>
+				<text>カスタム サイクル 12</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_12>
+		<drill_cycle_13>
+			<description>
+				<text>カスタム サイクル 13</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_13>
+		<drill_cycle_14>
+			<description>
+				<text>カスタム サイクル 14</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_14>
+		<drill_cycle_15>
+			<description>
+				<text>カスタム サイクル 15</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_15>
+		<drill_cycle_16>
+			<description>
+				<text>カスタム サイクル 16</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_16>
+		<drill_cycle_17>
+			<description>
+				<text>カスタム サイクル 17</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_17>
+		<drill_cycle_18>
+			<description>
+				<text>カスタム サイクル 18</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_18>
+		<drill_cycle_19>
+			<description>
+				<text>カスタム サイクル 19</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_19>
+		<drill_cycle_20>
+			<description>
+				<text>カスタム サイクル 20</text>
+			</description>
+			<dwell>
+				<text>ドゥエル</text>
+			</dwell>
+			<subsequent_peck>
+				<text>次のペック</text>
+			</subsequent_peck>
+			<peck_clearance>
+				<text>ペック クリアランス</text>
+			</peck_clearance>
+		</drill_cycle_20>
+		<simple_drill_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 1</text>
+			</description>
+			<parameter_1>
+				<text>1-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>1-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>1-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>1-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>1-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>1-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>1-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>1-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>1-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>1-ドリル パラメタ #10</text>
+			</parameter_10>
+		</simple_drill_custom_parameters>
+		<peck_drill_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 2</text>
+			</description>
+			<parameter_1>
+				<text>2-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>2-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>2-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>2-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>2-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>2-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>2-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>2-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>2-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>2-ドリル パラメタ #10</text>
+			</parameter_10>
+		</peck_drill_custom_parameters>
+		<chip_break_drill_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 3</text>
+			</description>
+			<parameter_1>
+				<text>3-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>3-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>3-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>3-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>3-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>3-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>3-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>3-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>3-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>3-ドリル パラメタ #10</text>
+			</parameter_10>
+		</chip_break_drill_custom_parameters>
+		<tap_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 4</text>
+			</description>
+			<parameter_1>
+				<text>4-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>4-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>4-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>4-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>4-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>4-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>4-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>4-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>4-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>4-ドリル パラメタ #10</text>
+			</parameter_10>
+		</tap_custom_parameters>
+		<bore1_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 5</text>
+			</description>
+			<parameter_1>
+				<text>5-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>5-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>5-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>5-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>5-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>5-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>5-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>5-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>5-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>5-ドリル パラメタ #10</text>
+			</parameter_10>
+		</bore1_custom_parameters>
+		<bore2_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 6</text>
+			</description>
+			<parameter_1>
+				<text>6-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>6-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>6-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>6-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>6-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>6-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>6-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>6-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>6-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>6-ドリル パラメタ #10</text>
+			</parameter_10>
+		</bore2_custom_parameters>
+		<misc1_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 7</text>
+			</description>
+			<parameter_1>
+				<text>7-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>7-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>7-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>7-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>7-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>7-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>7-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>7-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>7-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>7-ドリル パラメタ #10</text>
+			</parameter_10>
+		</misc1_custom_parameters>
+		<misc2_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 8</text>
+			</description>
+			<parameter_1>
+				<text>8-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>8-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>8-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>8-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>8-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>8-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>8-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>8-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>8-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>8-ドリル パラメタ #10</text>
+			</parameter_10>
+		</misc2_custom_parameters>
+		<drill_cycle_9_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 9</text>
+			</description>
+			<parameter_1>
+				<text>9-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>9-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>9-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>9-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>9-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>9-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>9-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>9-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>9-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>9-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_9_custom_parameters>
+		<drill_cycle_10_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 10</text>
+			</description>
+			<parameter_1>
+				<text>10-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>10-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>10-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>10-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>10-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>10-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>10-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>10-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>10-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>10-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_10_custom_parameters>
+		<drill_cycle_11_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 11</text>
+			</description>
+			<parameter_1>
+				<text>11-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>11-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>11-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>11-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>11-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>11-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>11-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>11-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>11-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>11-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_11_custom_parameters>
+		<drill_cycle_12_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 12</text>
+			</description>
+			<parameter_1>
+				<text>12-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>12-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>12-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>12-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>12-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>12-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>12-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>12-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>12-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>12-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_12_custom_parameters>
+		<drill_cycle_13_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 13</text>
+			</description>
+			<parameter_1>
+				<text>13-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>13-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>13-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>13-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>13-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>13-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>13-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>13-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>13-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>13-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_13_custom_parameters>
+		<drill_cycle_14_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 14</text>
+			</description>
+			<parameter_1>
+				<text>14-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>14-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>14-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>14-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>14-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>14-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>14-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>14-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>14-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>14-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_14_custom_parameters>
+		<drill_cycle_15_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 15</text>
+			</description>
+			<parameter_1>
+				<text>15-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>15-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>15-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>15-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>15-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>15-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>15-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>15-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>15-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>15-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_15_custom_parameters>
+		<drill_cycle_16_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 16</text>
+			</description>
+			<parameter_1>
+				<text>16-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>16-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>16-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>16-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>16-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>16-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>16-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>16-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>16-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>16-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_16_custom_parameters>
+		<drill_cycle_17_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 17</text>
+			</description>
+			<parameter_1>
+				<text>17-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>17-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>17-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>17-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>17-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>17-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>17-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>17-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>17-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>17-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_17_custom_parameters>
+		<drill_cycle_18_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 18</text>
+			</description>
+			<parameter_1>
+				<text>18-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>18-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>18-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>18-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>18-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>18-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>18-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>18-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>18-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>18-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_18_custom_parameters>
+		<drill_cycle_19_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 19</text>
+			</description>
+			<parameter_1>
+				<text>19-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>19-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>19-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>19-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>19-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>19-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>19-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>19-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>19-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>19-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_19_custom_parameters>
+		<drill_cycle_20_custom_parameters>
+			<description>
+				<text>カスタム ドリル パラメタ 20</text>
+			</description>
+			<parameter_1>
+				<text>20-ドリル パラメタ #1</text>
+			</parameter_1>
+			<parameter_2>
+				<text>20-ドリル パラメタ #2</text>
+			</parameter_2>
+			<parameter_3>
+				<text>20-ドリル パラメタ #3</text>
+			</parameter_3>
+			<parameter_4>
+				<text>20-ドリル パラメタ #4</text>
+			</parameter_4>
+			<parameter_5>
+				<text>20-ドリル パラメタ #5</text>
+			</parameter_5>
+			<parameter_6>
+				<text>20-ドリル パラメタ #6</text>
+			</parameter_6>
+			<parameter_7>
+				<text>20-ドリル パラメタ #7</text>
+			</parameter_7>
+			<parameter_8>
+				<text>20-ドリル パラメタ #8</text>
+			</parameter_8>
+			<parameter_9>
+				<text>20-ドリル パラメタ #9</text>
+			</parameter_9>
+			<parameter_10>
+				<text>20-ドリル パラメタ #10</text>
+			</parameter_10>
+		</drill_cycle_20_custom_parameters>
+		<drill_cycle_descriptions>
+			<simple_drill>
+				<text>G81/G82 ドリル/座ぐり</text>
+			</simple_drill>
+			<peck_drill>
+				<text>G83 ペックドリル</text>
+			</peck_drill>
+			<chip_break>
+				<text>G73 切りくず除去</text>
+			</chip_break>
+			<tapping>
+				<text>G74/G84 タップ</text>
+			</tapping>
+			<boring_1>
+				<text>G85 中繰り #1 (退避)</text>
+			</boring_1>
+			<boring_2>
+				<text>G86 中繰り #2 (主軸停止,早送り退避)</text>
+			</boring_2>
+			<misc_drill_1>
+				<text>G76 精密ボア(シフト)</text>
+			</misc_drill_1>
+			<misc_drill_2>
+				<text>リジットタップ</text>
+			</misc_drill_2>
+			<custom_drill_9>
+				<text>カスタム ドリル サイクル #9</text>
+			</custom_drill_9>
+			<custom_drill_10>
+				<text>カスタム ドリル サイクル #10</text>
+			</custom_drill_10>
+			<custom_drill_11>
+				<text>カスタム ドリル サイクル #11</text>
+			</custom_drill_11>
+			<custom_drill_12>
+				<text>カスタム ドリル サイクル #12</text>
+			</custom_drill_12>
+			<custom_drill_13>
+				<text>カスタム ドリル サイクル #13</text>
+			</custom_drill_13>
+			<custom_drill_14>
+				<text>カスタム ドリル サイクル #14</text>
+			</custom_drill_14>
+			<custom_drill_15>
+				<text>カスタム ドリル サイクル #15</text>
+			</custom_drill_15>
+			<custom_drill_16>
+				<text>カスタム ドリル サイクル #16</text>
+			</custom_drill_16>
+			<custom_drill_17>
+				<text>カスタム ドリル サイクル #17</text>
+			</custom_drill_17>
+			<custom_drill_18>
+				<text>カスタム ドリル サイクル #18</text>
+			</custom_drill_18>
+			<custom_drill_19>
+				<text>カスタム ドリル サイクル #19</text>
+			</custom_drill_19>
+			<custom_drill_20>
+				<text>カスタム ドリル サイクル #20</text>
+			</custom_drill_20>
+		</drill_cycle_descriptions>
+		<canned_text>
+			<canned_text_1>
+				<text>停止</text>
+			</canned_text_1>
+			<canned_text_2>
+				<text>操作停止</text>
+			</canned_text_2>
+			<canned_text_3>
+				<text>ﾋﾞﾙﾄﾞ on</text>
+			</canned_text_3>
+			<canned_text_4>
+				<text>ﾋﾞﾙﾄﾞ off</text>
+			</canned_text_4>
+			<canned_text_5>
+				<text>M5</text>
+			</canned_text_5>
+			<canned_text_6>
+				<text>M6</text>
+			</canned_text_6>
+			<canned_text_7>
+				<text>M7</text>
+			</canned_text_7>
+			<canned_text_8>
+				<text>M8</text>
+			</canned_text_8>
+			<canned_text_9>
+				<text>M9</text>
+			</canned_text_9>
+			<canned_text_10>
+				<text>M10</text>
+			</canned_text_10>
+		</canned_text>
+	</control>
+</mp_xml_post_text>
+[CTRL_TEXT_XML_END]

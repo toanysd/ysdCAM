@@ -1,0 +1,11 @@
+numpy
+scikit-learn
+fastapi
+uvicorn
+python-multipart
+ezdxf
+shapely
+
+scipy
+scikit-image
+cadquery==2.7.0

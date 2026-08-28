@@ -1,0 +1,49 @@
+{
+  "menu": {
+    "file": "ファイル",
+    "edit": "編集",
+    "view": "表示",
+    "tools": "ツール",
+    "machine": "マシン",
+    "window": "ウィンドウ",
+    "help": "ヘルプ",
+    "open_project": "プロジェクトを開く (.ycam)...",
+    "import_cad": "CADのインポート (STEP/DXF)...",
+    "save_as": "名前を付けて保存 (.ycam)...",
+    "export_dxf": "DXFエクスポート...",
+    "export_gcode": "Gコード出力...",
+    "settings": "設定..."
+  },
+  "toolbar": {
+    "open_project": "プロジェクトを開く",
+    "import_cad": "CADインポート",
+    "save_project": "プロジェクト保存",
+    "calc_holes": "穴計算",
+    "processing": "処理中...",
+    "export_dxf": "DXFエクスポート",
+    "post_gcode": "Gコード出力",
+    "fit_screen": "画面に合わせる"
+  },
+  "panels": {
+    "ops_manager": "オペレーション管理",
+    "wcs_origin": "原点 (G54)",
+    "tool_setup": "ツール設定 (T_PLANE)",
+    "tool_no": "ツール番号",
+    "dia_mm": "直径 (MM)",
+    "spindle": "主軸回転数 (S)",
+    "feed": "送り速度 (F)",
+    "peck": "ペック量 (Q)",
+    "z_safe": "安全Z",
+    "output": "出力",
+    "levels_manager": "レベル管理",
+    "no_layers": "レイヤーなし",
+    "model": "モデル:"
+  },
+  "canvas": {
+    "no_model": "モデルがロードされていません",
+    "select_objs": "オブジェクトを選択...",
+    "move_prompt": "MOVE 基点を指定 または [距離]:",
+    "copy_prompt": "COPY 基点を指定 または [距離/モード]:",
+    "dim_prompt": "DIM 最初の寸法補助線の起点を指定:"
+  }
+}
