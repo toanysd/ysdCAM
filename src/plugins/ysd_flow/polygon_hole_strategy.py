@@ -9,7 +9,7 @@ from typing import List, Tuple
 from shapely.geometry import Polygon, Point
 
 class PolygonHoleStrategy:
-    def __init__(self, max_edge_gap: float = 12.0, bisector_offset: float = 1.5, min_segment_len: float = 1.0):
+    def __init__(self, max_edge_gap: float = 20.0, bisector_offset: float = 1.5, min_segment_len: float = 1.0):
         self.max_edge_gap = max_edge_gap
         self.bisector_offset = bisector_offset
         self.min_segment_len = min_segment_len
@@ -271,8 +271,13 @@ class PolygonHoleStrategy:
         return merged
 
     def _is_wall_up(self, edge: dict, face_z: float, all_faces_z: list) -> bool:
-        # Luôn trả về True — layer nào cũng có thể cần lỗ
-        # Logic lọc wall thực sự được xử lý ở generate_cam_use_case level
+        if not all_faces_z: return True
+        sorted_z = sorted(all_faces_z, reverse=True)
+        if len(sorted_z) < 2:
+            return True
+        highest_z = sorted_z[0]
+        if abs(face_z - highest_z) < 0.2:
+            return False
         return True
 
     def calculate_holes(self, wire_edges_data: list, face_center: tuple, density_multiplier: float = 1.0, face_z: float = None, all_faces_z: list = None) -> List[tuple]:
@@ -425,4 +430,4 @@ class PolygonHoleStrategy:
                             dist = clean_poly.exterior.distance(pt)
                             holes_2d.append((pt.x, pt.y, face_z_val, 'line', wall_up, norm, dist))
                             
-        return self._deduplicate_holes(holes_2d, 3.0)
+        return self._deduplicate_holes(holes_2d, 5.0)

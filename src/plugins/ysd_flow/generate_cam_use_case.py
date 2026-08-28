@@ -321,24 +321,37 @@ class GenerateMoldCAMUseCase:
         back_holes = [h for h in holes_data if 'back' in h.get('hole_type', '')]
         other_holes = [h for h in holes_data if 'back' not in h.get('hole_type', '')]
         
-        # Task 22: apply_shared_hole_dedup with spatial list check
+        # Task 38: apply_shared_hole_dedup: group theo Z, KHÔNG dedup cross-layer
         def apply_shared_hole_dedup(back_holes, xy_threshold=3.0):
             import math
-            result = sorted(back_holes, key=lambda h: h['z'])  # z nhỏ nhất (sâu nhất) trước
-            active_holes = []  # list các lỗ đã được set active=True
-
-            for h in result:
-                found_close = False
-                for a in active_holes:
-                    if math.hypot(h['x'] - a['x'], h['y'] - a['y']) < xy_threshold:
+            from collections import defaultdict
+            by_z = defaultdict(list)
+            for h in back_holes:
+                z_key = round(h['z'], 1)
+                by_z[z_key].append(h)
+            
+            active_holes = []
+            for z_key in sorted(by_z.keys()):
+                layer_holes = by_z[z_key]
+                kept = []
+                for h in layer_holes:
+                    too_close = False
+                    for k in kept:
+                        if math.hypot(h['x'] - k['x'], h['y'] - k['y']) < xy_threshold:
+                            too_close = True
+                            break
+                    if not too_close:
+                        h['is_active'] = True
+                        kept.append(h)
+                    else:
                         h['is_active'] = False
-                        found_close = True
-                        break
-                if not found_close:
-                    h['is_active'] = True
-                    active_holes.append(h)
-
-            return result
+                active_holes.extend(kept)
+            
+            for h in back_holes:
+                if 'is_active' not in h:
+                    h['is_active'] = False
+            
+            return back_holes
 
         merged_back_holes = apply_shared_hole_dedup(back_holes)
         active_count = sum(1 for h in merged_back_holes if h.get('is_active', True))
