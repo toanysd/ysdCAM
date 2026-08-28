@@ -147,7 +147,7 @@ function App() {
   
   const [activeLayer, setActiveLayer] = useState(null);
   const [layerNames, setLayerNames] = useState({});
-  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'z', direction: 'desc' });
 
   const getLayerProps = (depth) => {
     const layerHoles = holesData.filter(h => h.depth === depth);
