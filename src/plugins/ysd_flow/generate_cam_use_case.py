@@ -130,7 +130,7 @@ class GenerateMoldCAMUseCase:
 
             try:
                 from src.plugins.ysd_flow.polygon_hole_strategy import PolygonHoleStrategy
-                strategy = PolygonHoleStrategy(max_edge_gap=20.0, bisector_offset=1.5)
+                strategy = PolygonHoleStrategy(bisector_offset=1.5)
             except Exception as e:
                 print(f"Error loading strategy: {e}")
                 strategy = None
@@ -248,7 +248,7 @@ class GenerateMoldCAMUseCase:
 
                 if face_wires:
                     layer_wires_all.extend(face_wires)
-                    if strategy and z_val < max_z:
+                    if strategy and z_val <= max_z:
                         try:
                             fc = face.Center()
                             all_z_vals = [z for z in layer_groups.keys() if z < max_z and any(f.Area() >= 3.0 for f in layer_groups[z])]
@@ -305,7 +305,7 @@ class GenerateMoldCAMUseCase:
                 for h in layer_new_holes_sorted:
                     too_close = False
                     for kept in deduped:
-                        if math.hypot(h['x'] - kept['x'], h['y'] - kept['y']) < 5.0:
+                        if math.hypot(h['x'] - kept['x'], h['y'] - kept['y']) < 3.0:
                             too_close = True
                             break
                     if not too_close:
@@ -322,7 +322,7 @@ class GenerateMoldCAMUseCase:
         other_holes = [h for h in holes_data if 'back' not in h.get('hole_type', '')]
         
         # Task 22: apply_shared_hole_dedup with spatial list check
-        def apply_shared_hole_dedup(back_holes, xy_threshold=5.0):
+        def apply_shared_hole_dedup(back_holes, xy_threshold=3.0):
             import math
             result = sorted(back_holes, key=lambda h: h['z'])  # z nhỏ nhất (sâu nhất) trước
             active_holes = []  # list các lỗ đã được set active=True
