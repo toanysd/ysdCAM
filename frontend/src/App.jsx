@@ -622,9 +622,9 @@ function App() {
   };
 
   return (
-    <div className="app-container" onClick={() => { if (menuOpen) setMenuOpen(null) }}>
+    <div className="app-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }} onClick={() => { if (menuOpen) setMenuOpen(null) }}>
       {/* 1. MENU BAR */}
-      <div className="menu-bar">
+      <div className="menu-bar" style={{ flexShrink: 0 }}>
         <div className={`menu-item ${menuOpen === 'file' ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); setMenuOpen(menuOpen === 'file' ? null : 'file'); }}>
           {t('menu.file')}
           {menuOpen === 'file' && (
@@ -672,7 +672,7 @@ function App() {
       </div>
 
       {/* 2. RIBBON / STANDARD TOOLBAR */}
-      <div className="ribbon">
+      <div className="ribbon" style={{ flexShrink: 0 }}>
         {activeModule === 'sketch' && (
           <>
             <button className={`ribbon-btn ${activeTool === 'select' ? 'primary' : ''}`} onClick={() => setActiveTool('select')}>↖ Select</button>
@@ -711,9 +711,9 @@ function App() {
       </div>
 
       {/* 3. MAIN WORKSPACE */}
-      <div className="workspace-wrapper">
+      <div className="workspace-wrapper" style={{ display: 'flex', flex: '1 1 0', overflow: 'hidden', minHeight: 0, minWidth: 0, width: '100%' }}>
         {/* MODULE SWITCHER (LEFT EDGE) */}
-        <div className="module-switcher">
+        <div className="module-switcher" style={{ flexShrink: 0 }}>
           {APP_PLUGINS.filter(p => p.enabled).map(plugin => (
             <div 
               key={plugin.id}
@@ -727,12 +727,12 @@ function App() {
           ))}
         </div>
 
-        <div className="workspace" style={{ display: 'flex', flexDirection: 'row', width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+        <div className="workspace" style={{ display: 'flex', flexDirection: 'row', flex: '1 1 0', width: '100%', height: '100%', position: 'relative', overflow: 'hidden', minHeight: 0, minWidth: 0 }}>
         
         {/* DOCK LEFT: OPERATIONS MANAGER */}
         {showLeft && (
-          <div style={{ display: 'flex', position: 'relative', flexShrink: 0 }}>
-            <div className="dock-panel left-panel" style={{ width: `${leftWidth}px`, minWidth: `${leftWidth}px`, position: 'relative', boxShadow: '2px 0 10px rgba(0,0,0,0.5)' }}>
+          <div style={{ display: 'flex', position: 'relative', flexShrink: 0, width: `${leftWidth}px`, height: '100%' }}>
+            <div className="dock-panel left-panel" style={{ width: '100%', height: '100%', position: 'relative', boxShadow: '2px 0 10px rgba(0,0,0,0.5)', overflowY: 'auto' }}>
               <div className="dock-header">
                 <span>{activeModule === 'sketch' ? 'Entities Tree' : activeModule === '3d' ? 'Model Tree' : 'Operations Manager'}</span>
                 <span className="close-btn" onClick={() => setShowLeft(false)}>✕</span>
@@ -799,12 +799,14 @@ function App() {
 
         {/* VIEWPORT CENTER */}
         <div className="viewport" style={{ 
-          flex: 1,
+          flex: '1 1 0',
           position: 'relative', 
           display: 'flex', 
           flexDirection: 'column',
           minWidth: 0,
           minHeight: 0,
+          width: '100%',
+          height: '100%',
           pointerEvents: isResizing ? 'none' : 'auto', 
           zIndex: 1 
         }}>
@@ -848,7 +850,7 @@ function App() {
           </div>
           
           {activeModule === '3d' ? (
-            <div style={{ flex: 1, position: 'relative', background: '#0f1115', width: '100%', height: '100%' }}>
+            <div style={{ flex: '1 1 0', position: 'relative', background: '#0f1115', width: '100%', height: '100%', minHeight: 0, minWidth: 0 }}>
               {stepFileName ? (
                 <Suspense fallback={<div style={{color:'white', padding: 20}}>Loading 3D Module...</div>}>
                   <ModelPreview3D filename={stepFileName} boundingBox={analysisResult?.boundingBox} />
@@ -861,7 +863,7 @@ function App() {
               )}
             </div>
           ) : (holesData.length > 0 || (edgesData && edgesData.length > 0) || stepFileName) ? (
-            <div style={{ flex: 1, position: 'relative', width: '100%', height: '100%', minHeight: 0, minWidth: 0 }}>
+            <div style={{ flex: '1 1 0', position: 'relative', width: '100%', height: '100%', minHeight: 0, minWidth: 0 }}>
               <CADCanvas 
                 ref={cadCanvasRef}
                 showFrameColor={showFrameColor}
@@ -883,7 +885,7 @@ function App() {
               />
             </div>
           ) : (
-            <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ textAlign: 'center', flex: '1 1 0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <h2 style={{ fontSize: '24px', color: 'rgba(255,255,255,0.2)', letterSpacing: '4px' }}>{t('canvas.no_model')}</h2>
             </div>
           )}
@@ -910,9 +912,9 @@ function App() {
 
         {/* DOCK RIGHT: LEVELS MANAGER */}
         {showRight && (
-          <div style={{ display: 'flex', position: 'relative', flexShrink: 0 }}>
+          <div style={{ display: 'flex', position: 'relative', flexShrink: 0, width: `${rightWidth}px`, height: '100%' }}>
             <div className="resizer-x" style={{ left: 0, marginLeft: '-2px' }} onMouseDown={(e) => handleResize(e, 'right')}></div>
-            <div className="dock-panel right-panel" style={{ width: `${rightWidth}px`, minWidth: `${rightWidth}px`, position: 'relative', boxShadow: '-2px 0 10px rgba(0,0,0,0.5)' }}>
+            <div className="dock-panel right-panel" style={{ width: '100%', height: '100%', position: 'relative', boxShadow: '-2px 0 10px rgba(0,0,0,0.5)', overflowY: 'auto' }}>
               <div className="dock-header">
                 <span>{activeModule === 'sketch' ? t('panels.levels_manager') : activeModule === '3d' ? 'Properties' : 'CAM Parameters'}</span>
                 <span className="close-btn" onClick={() => setShowRight(false)}>✕</span>
@@ -1041,7 +1043,7 @@ function App() {
       </div>
 
       {/* DOCUMENT TABS */}
-      <div className="document-tabs">
+      <div className="document-tabs" style={{ flexShrink: 0 }}>
         {tabs.map(tab => (
           <div key={tab.id} className={`doc-tab ${tab.id === activeTabId ? 'active' : ''}`} onClick={() => switchTab(tab.id)}>
             {tab.id === activeTabId ? (stepFileName ? stepFileName.replace(/\.[^/.]+$/, "") : tab.name) : tab.name}
@@ -1052,7 +1054,7 @@ function App() {
       </div>
 
       {/* 5. STATUS BAR */}
-      <div className="status-bar">
+      <div className="status-bar" style={{ flexShrink: 0 }}>
         <div className="status-widget">MODEL</div>
         <div className="status-widget">LAYOUT1</div>
         <div className="status-widget active">OSNAP</div>

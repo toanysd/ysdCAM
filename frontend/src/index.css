@@ -10,13 +10,13 @@
   --highlight: #2ed573;
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
-html, body, #root {
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -27,14 +27,20 @@ html, body, #root {
   color: var(--text-primary);
 }
 
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* APP CONTAINER */
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-  max-width: 100vw;
-  max-height: 100vh;
+  height: 100%;
+  width: 100%;
   overflow: hidden;
 }
 
