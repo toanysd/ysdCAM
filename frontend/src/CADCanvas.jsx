@@ -478,7 +478,7 @@ const CADCanvas = forwardRef(({ showFrameColor, holesData, setHolesData, edgesDa
             </mesh>
             
             {/* 3D Holes overlay */}
-            {is3DActive && holesData.map((h, i) => {
+            {is3DActive && holesData.filter(h => h.is_active !== false).map((h, i) => {
               const r = h.radius || (h.diameter ? h.diameter / 2 : 2.1);
               const depthVal = h.actual_z !== undefined ? Math.abs(h.actual_z) : (parseFloat(h.depth) || 10);
               // Cylinder mặc định nằm dọc trục Y, ta xoay nó dọc trục Z (X: Math.PI/2)
@@ -567,7 +567,7 @@ const CADCanvas = forwardRef(({ showFrameColor, holesData, setHolesData, edgesDa
           {/* BATCH HOLES — 1 Shape per depth */}
           {allDepths.map(depth => {
             if (hiddenLayers[`hole-${depth}`]) return null;
-            const holes = holesByDepth[depth] || [];
+            const holes = (holesByDepth[depth] || []).filter(h => h.is_active !== false);
             if (holes.length === 0) return null;
             const color = depthColorMap[depth] || '#888';
             return (

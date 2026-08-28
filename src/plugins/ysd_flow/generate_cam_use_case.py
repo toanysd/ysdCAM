@@ -294,36 +294,54 @@ class GenerateMoldCAMUseCase:
                 })
                 
             if layer_new_holes:
+                # Task 21: Dedup toàn layer: loại lỗ chồng nhau giữa các faces của cùng 1 layer
+                import math
+                TYPE_PRIORITY = {'arc_peak': 0, 'corner': 1, 'line': 2}
+                layer_new_holes_sorted = sorted(
+                    layer_new_holes,
+                    key=lambda h: TYPE_PRIORITY.get(h['hole_type'].split('_')[-1], 9)
+                )
+                deduped = []
+                for h in layer_new_holes_sorted:
+                    too_close = False
+                    for kept in deduped:
+                        if math.hypot(h['x'] - kept['x'], h['y'] - kept['y']) < 5.0:
+                            too_close = True
+                            break
+                    if not too_close:
+                        deduped.append(h)
+                layer_new_holes = deduped
+
                 holes_data.extend(layer_new_holes)
             
-            print(f"[USE CASE] Layer z={z_val}: {valid_faces_count} faces processed → {len(layer_new_holes)} lỗ back ana")
+            print(f"[USE CASE] Layer z={z_val}: {valid_faces_count} faces processed → {len(layer_new_holes)} lỗ back ana (sau dedup nội layer)")
             color_idx += 1
                 
         # Global deduplication across all layers using iterative merging
         back_holes = [h for h in holes_data if 'back' in h.get('hole_type', '')]
         other_holes = [h for h in holes_data if 'back' not in h.get('hole_type', '')]
         
+        # Task 22: apply_shared_hole_dedup with spatial list check
         def apply_shared_hole_dedup(back_holes, xy_threshold=5.0):
             import math
-            result = sorted(back_holes, key=lambda h: h['z'])  # sâu → nông
-            active_map = {}  # key: (ax, ay) → z đã có lỗ active
-            
+            result = sorted(back_holes, key=lambda h: h['z'])  # z nhỏ nhất (sâu nhất) trước
+            active_holes = []  # list các lỗ đã được set active=True
+
             for h in result:
                 found_close = False
-                for (ax, ay), az in active_map.items():
-                    if math.hypot(h['x'] - ax, h['y'] - ay) < xy_threshold:
+                for a in active_holes:
+                    if math.hypot(h['x'] - a['x'], h['y'] - a['y']) < xy_threshold:
                         h['is_active'] = False
                         found_close = True
                         break
-                
                 if not found_close:
                     h['is_active'] = True
-                    active_map[(h['x'], h['y'])] = h['z']
-            
+                    active_holes.append(h)
+
             return result
 
         merged_back_holes = apply_shared_hole_dedup(back_holes)
-        active_count = sum(1 for h in merged_back_holes if h['is_active'])
+        active_count = sum(1 for h in merged_back_holes if h.get('is_active', True))
         holes_data = other_holes + merged_back_holes
         print(f"[USE CASE] shared_hole dedup: {len(back_holes)} -> {active_count} active.")
 

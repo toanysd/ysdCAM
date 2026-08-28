@@ -150,7 +150,7 @@ function App() {
   const [sortConfig, setSortConfig] = useState({ key: 'z', direction: 'desc' });
 
   const getLayerProps = (depth) => {
-    const layerHoles = holesData.filter(h => h.depth === depth);
+    const layerHoles = holesData.filter(h => h.depth === depth && h.is_active !== false);
     const layerEdges = (edgesData || []).filter(e => e.depth === depth);
     const items = layerHoles.length + layerEdges.reduce((sum, eg) => sum + eg.wires.length, 0);
     
@@ -994,7 +994,7 @@ function App() {
                     </div>
                     {allDepths.map((depth, idx) => {
                       const color = depthColors[idx % depthColors.length];
-                      const layerHoles = holesData.filter(h => h.depth === depth);
+                      const layerHoles = holesData.filter(h => h.depth === depth && h.is_active !== false);
                       const layerEdges = (edgesData || []).filter(e => e.depth === depth);
                       const holeCount = layerHoles.length;
                       const edgeCount = layerEdges.reduce((sum, eg) => sum + eg.wires.length, 0);
