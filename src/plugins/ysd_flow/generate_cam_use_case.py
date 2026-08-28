@@ -252,16 +252,23 @@ class GenerateMoldCAMUseCase:
                             fc = face.Center()
                             strategy_holes = strategy.calculate_holes(face_wires, face_center=(fc.x, fc.y, z_val), density_multiplier=1.0)
                             for (hx, hy, hz, htype, is_valid_wall, norm, dist) in strategy_holes:
-                                depth_val = max_z - hz - 2.0
+                                flesh = 2.0
+                                depth_val = round((hz - min_z) - flesh, 2)
+                                if depth_val < 1.0:
+                                    continue # không đủ thịt — bỏ lỗ này
                                 layer_new_holes.append({
                                     'id': str(uuid.uuid4()),
                                     'x': round(hx, 3),
                                     'y': round(hy, 3),
                                     'z': round(hz, 3),
                                     'actual_z': round(hz, 3),
+                                    'zmin': min_z,
                                     'diameter': 4.2,
-                                    'depth': round(depth_val, 2),
-                                    'hole_type': f'back_drill_4.2_{htype}'
+                                    'depth': depth_val,
+                                    'hole_type': f'back_drill_4.2_{htype}',
+                                    'face_id': f"z{z_val}_f{face_idx}",
+                                    'face_center_x': round(fc.x, 3),
+                                    'face_center_y': round(fc.y, 3)
                                 })
                         except Exception as e:
                             import traceback
@@ -284,54 +291,29 @@ class GenerateMoldCAMUseCase:
         back_holes = [h for h in holes_data if 'back' in h.get('hole_type', '')]
         other_holes = [h for h in holes_data if 'back' not in h.get('hole_type', '')]
         
-        # Start: each hole is its own cluster
-        clusters = [{'cx': h['x'], 'cy': h['y'], 'members': [h]} for h in back_holes]
-        
-        # Iteratively merge any two clusters whose centers are < 5.0mm apart
-        changed = True
-        while changed:
-            changed = False
-            merged_clusters = []
-            consumed = set()
-            for i, ci in enumerate(clusters):
-                if i in consumed:
-                    continue
-                for j, cj in enumerate(clusters):
-                    if j <= i or j in consumed:
-                        continue
-                    dist_xy = math.hypot(ci['cx'] - cj['cx'], ci['cy'] - cj['cy'])
-                    if dist_xy < 5.0:
-                        # Merge cj into ci
-                        ci['members'].extend(cj['members'])
-                        xs = [m['x'] for m in ci['members']]
-                        ys = [m['y'] for m in ci['members']]
-                        ci['cx'] = sum(xs) / len(xs)
-                        ci['cy'] = sum(ys) / len(ys)
-                        consumed.add(j)
-                        changed = True
-                merged_clusters.append(ci)
-            clusters = [c for i, c in enumerate(clusters) if i not in consumed]
-            # If any new merges: restart to re-check cascading merges
-        
-        merged_back_holes = []
-        for cluster in clusters:
-            members = cluster['members']
-            # Use the deepest hole as the template (highest depth value)
-            deepest = max(members, key=lambda m: m['depth'])
-            merged_back_holes.append({
-                'id': deepest['id'],
-                'x': round(cluster['cx'], 3),
-                'y': round(cluster['cy'], 3),
-                'z': deepest['z'],
-                'depth': deepest['depth'],
-                'actual_z': deepest['actual_z'],
-                'diameter': 4.2,
-                'hole_type': deepest.get('hole_type', 'back_drill_4.2'),
-                'is_active': True
-            })
-        
+        def apply_shared_hole_dedup(back_holes, xy_threshold=5.0):
+            import math
+            result = sorted(back_holes, key=lambda h: h['z'])  # sâu → nông
+            active_map = {}  # key: (ax, ay) → z đã có lỗ active
+            
+            for h in result:
+                found_close = False
+                for (ax, ay), az in active_map.items():
+                    if math.hypot(h['x'] - ax, h['y'] - ay) < xy_threshold:
+                        h['is_active'] = False
+                        found_close = True
+                        break
+                
+                if not found_close:
+                    h['is_active'] = True
+                    active_map[(h['x'], h['y'])] = h['z']
+            
+            return result
+
+        merged_back_holes = apply_shared_hole_dedup(back_holes)
+        active_count = sum(1 for h in merged_back_holes if h['is_active'])
         holes_data = other_holes + merged_back_holes
-        print(f"[USE CASE] Global dedup: {len(back_holes)} back holes -> {len(merged_back_holes)} (in {len(clusters)} clusters)")
+        print(f"[USE CASE] shared_hole dedup: {len(back_holes)} -> {active_count} active.")
 
 
         # 4. Gom các lỗ chưa được khớp (fallback) vào layer gần nhất
@@ -369,6 +351,8 @@ class GenerateMoldCAMUseCase:
                 "maxX": wp.val().BoundingBox().xmax,
                 "minY": wp.val().BoundingBox().ymin,
                 "maxY": wp.val().BoundingBox().ymax,
+                "minZ": wp.val().BoundingBox().zmin,
+                "maxZ": wp.val().BoundingBox().zmax,
                 "origW": wp.val().BoundingBox().xlen,
                 "origH": wp.val().BoundingBox().ylen
             }
