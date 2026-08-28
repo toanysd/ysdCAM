@@ -90,14 +90,16 @@ class PolygonHoleStrategy:
         if not holes:
             return holes
             
+        TYPE_PRIORITY = {'arc_peak': 0, 'corner': 1, 'line': 2}
+        # Sort: arc_peak trước, sau đó corner, sau đó line
+        sorted_holes = sorted(holes, key=lambda h: TYPE_PRIORITY.get(h[3], 9))
         clusters = []
-        for h in holes:
+        for h in sorted_holes:
             added = False
             for cluster in clusters:
-                if math.hypot(h[0] - cluster['rep'][0], h[1] - cluster['rep'][1]) < min_dist:
-                    # Giữ điểm xa face_center nhất (dist lớn hơn = gần thành hơn)
-                    if h[6] > cluster['rep'][6]:
-                        cluster['rep'] = h
+                rep = cluster['rep']
+                if math.hypot(h[0] - rep[0], h[1] - rep[1]) < min_dist:
+                    # Đã có lỗ ưu tiên cao hơn trong cluster → bỏ h
                     added = True
                     break
             if not added:
