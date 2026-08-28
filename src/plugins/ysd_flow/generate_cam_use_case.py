@@ -100,6 +100,7 @@ class GenerateMoldCAMUseCase:
         holes_data = []
         
         sorted_z = sorted(layer_groups.keys(), reverse=True)
+        z_rank = {z: i for i, z in enumerate(sorted_z)}
         temp_dir = os.path.dirname(self.cad_filepath)
         
         # Color palette cho từng độ sâu
@@ -250,8 +251,17 @@ class GenerateMoldCAMUseCase:
                     if strategy and z_val < max_z:
                         try:
                             fc = face.Center()
-                            strategy_holes = strategy.calculate_holes(face_wires, face_center=(fc.x, fc.y, z_val), density_multiplier=1.0)
+                            all_z_vals = [z for z in layer_groups.keys() if z < max_z and any(f.Area() >= 3.0 for f in layer_groups[z])]
+                            strategy_holes = strategy.calculate_holes(
+                                face_wires, 
+                                face_center=(fc.x, fc.y, z_val),
+                                face_z=z_val,
+                                all_faces_z=all_z_vals,
+                                density_multiplier=1.0
+                            )
                             for (hx, hy, hz, htype, is_valid_wall, norm, dist) in strategy_holes:
+                                if not is_valid_wall:
+                                    continue
                                 flesh = 2.0
                                 depth_val = round((hz - min_z) - flesh, 2)
                                 if depth_val < 1.0:
@@ -268,7 +278,9 @@ class GenerateMoldCAMUseCase:
                                     'hole_type': f'back_drill_4.2_{htype}',
                                     'face_id': f"z{z_val}_f{face_idx}",
                                     'face_center_x': round(fc.x, 3),
-                                    'face_center_y': round(fc.y, 3)
+                                    'face_center_y': round(fc.y, 3),
+                                    'layer_rank': z_rank.get(z_val, 99),
+                                    'is_top_layer': (z_val == max_z)
                                 })
                         except Exception as e:
                             import traceback

@@ -94,23 +94,16 @@ class PolygonHoleStrategy:
         for h in holes:
             added = False
             for cluster in clusters:
-                if math.hypot(h[0] - cluster['x'], h[1] - cluster['y']) < min_dist:
-                    cluster['points'].append(h)
-                    cluster['x'] = sum(p[0] for p in cluster['points']) / len(cluster['points'])
-                    cluster['y'] = sum(p[1] for p in cluster['points']) / len(cluster['points'])
+                if math.hypot(h[0] - cluster['rep'][0], h[1] - cluster['rep'][1]) < min_dist:
+                    # Giữ điểm xa face_center nhất (dist lớn hơn = gần thành hơn)
+                    if h[6] > cluster['rep'][6]:
+                        cluster['rep'] = h
                     added = True
                     break
             if not added:
-                clusters.append({
-                    'x': h[0], 'y': h[1], 'points': [h]
-                })
+                clusters.append({'rep': h})
                 
-        result = []
-        for c in clusters:
-            best_h = c['points'][0]
-            result.append((c['x'], c['y'], best_h[2], best_h[3], best_h[4], best_h[5], best_h[6]))
-            
-        return result
+        return [c['rep'] for c in clusters]
 
     def _get_arc_params(self, edge: dict):
         p1 = edge['start']
@@ -275,7 +268,24 @@ class PolygonHoleStrategy:
                 
         return merged
 
-    def calculate_holes(self, wire_edges_data: list, face_center: tuple, density_multiplier: float = 1.0) -> List[tuple]:
+    def _is_wall_up(self, edge: dict, face_z: float, all_faces_z: list) -> bool:
+        """
+        Kiểm tra cạnh này có phải thành đi lên không.
+        Heuristic: nếu face_z là layer cao nhất trong all_faces_z → 
+        các cạnh của nó đều đi xuống → không sinh lỗ.
+        Ngược lại, sinh lỗ bình thường (wall_up=True).
+        """
+        if not all_faces_z: return True
+        sorted_z = sorted(all_faces_z, reverse=True)
+        if len(sorted_z) < 2:
+            return True  # chỉ 1 layer → luôn wall_up
+        highest_z = sorted_z[0]
+        # Nếu face_z là layer cao nhất → cạnh đi xuống → False
+        if abs(face_z - highest_z) < 0.2:
+            return False
+        return True
+
+    def calculate_holes(self, wire_edges_data: list, face_center: tuple, density_multiplier: float = 1.0, face_z: float = None, all_faces_z: list = None) -> List[tuple]:
         if not wire_edges_data:
             return []
             
@@ -295,20 +305,8 @@ class PolygonHoleStrategy:
             clean_poly = poly
             
         holes_2d = []
-        face_z = face_center[2]
+        face_z_val = face_z if face_z is not None else face_center[2]
         n_edges = len(merged_edges)
-        
-        def get_wall_property(px, py):
-            min_dist = float('inf')
-            wall_up = True
-            for edge in sorted_edges:
-                pmx = (edge['start'][0] + edge['end'][0]) / 2.0
-                pmy = (edge['start'][1] + edge['end'][1]) / 2.0
-                d = math.hypot(px - pmx, py - pmy)
-                if d < min_dist:
-                    min_dist = d
-                    wall_up = edge.get('has_wall_up', True)
-            return wall_up
         
         for i in range(n_edges):
             prev_edge = merged_edges[(i - 1) % n_edges]
@@ -340,7 +338,7 @@ class PolygonHoleStrategy:
             dir_y = v[1] - u[1]
             dir_norm = self._normalize(dir_x, dir_y)
             bend_magnitude = math.hypot(dir_x, dir_y)
-            wall_up = get_wall_property(p_curr[0], p_curr[1])
+            wall_up = self._is_wall_up(curr_edge, face_z_val, all_faces_z)
             
             if bend_magnitude > 0.05:
                 if dir_norm == (0.0, 0.0):
@@ -369,7 +367,7 @@ class PolygonHoleStrategy:
                 if selected_cand:
                     pt, norm = selected_cand
                     dist = clean_poly.exterior.distance(pt)
-                    holes_2d.append((pt.x, pt.y, face_z, 'corner', wall_up, norm, dist))
+                    holes_2d.append((pt.x, pt.y, face_z_val, 'corner', wall_up, norm, dist))
                     
             if curr_edge.get('is_arc_group') and curr_edge.get('arc_params'):
                 cx, cy, r = curr_edge['arc_params']
@@ -398,7 +396,7 @@ class PolygonHoleStrategy:
                 res = offset_arc_point(mid, cx, cy)
                 if res:
                     pt, norm = res
-                    holes_2d.append((pt.x, pt.y, face_z, 'arc_peak', curr_edge.get('has_wall_up', True), norm, clean_poly.exterior.distance(pt)))
+                    holes_2d.append((pt.x, pt.y, face_z_val, 'arc_peak', wall_up, norm, clean_poly.exterior.distance(pt)))
             else:
                 start = curr_edge['start']
                 end = curr_edge['end']
@@ -435,6 +433,6 @@ class PolygonHoleStrategy:
                         if selected_cand:
                             pt, norm = selected_cand
                             dist = clean_poly.exterior.distance(pt)
-                            holes_2d.append((pt.x, pt.y, face_z, 'line', curr_edge.get('has_wall_up', True), norm, dist))
+                            holes_2d.append((pt.x, pt.y, face_z_val, 'line', wall_up, norm, dist))
                             
         return self._deduplicate_holes(holes_2d, 5.0)
