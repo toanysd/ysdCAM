@@ -878,7 +878,7 @@ function App() {
                 setDimensionsData={setDimensionsData}
                 onMouseMoveWorld={(x,y) => setWorldMousePos({x, y, z: 0})}
                 stepFileName={stepFileName}
-                show3DLayer={false} // Disable overlay as 3D is now in its own tab
+                show3DLayer={show3DLayer}
                 stepBoundingBox={analysisResult?.boundingBox}
               />
             </div>
