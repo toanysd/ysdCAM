@@ -375,6 +375,8 @@ class GenerateMoldCAMUseCase:
             "status": "success",
             "message": "Phân tích CAM theo Layer hoàn tất.",
             "holes": holes_data,
+            "vacuum_holes": [h for h in merged_back_holes if h.get('is_active')],
+            "structural_holes": other_holes,
             "edges": edges_data,
             "boundingBox": {
                 "minX": wp.val().BoundingBox().xmin,

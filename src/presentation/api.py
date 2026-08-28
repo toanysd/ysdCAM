@@ -100,11 +100,14 @@ async def analyze_cad(
     # Trả về số lượng và mảng tọa độ lỗ để Frontend vẽ 2D
     return {
         "status": "success", 
-        "filename": file.filename, 
-        "holes_processed": result.get("holes_processed", 0),
+        "filename": file.filename if file else (dxf_file.filename if dxf_file else ""), 
+        "holes_processed": result.get("holes_processed", len(result.get("vacuum_holes", holes_data))),
         "holes": holes_data,
+        "vacuum_holes": result.get("vacuum_holes", []),
+        "structural_holes": result.get("structural_holes", []),
         "edges": edges_data,
-        "bounding_box": result.get("bounding_box"),
+        "boundingBox": result.get("boundingBox"),
+        "bounding_box": result.get("boundingBox"),
         "message": "Phân tích CAD thành công."
     }
 

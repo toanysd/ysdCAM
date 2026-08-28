@@ -521,12 +521,19 @@ function App() {
       if (data.status === "success") {
         setAnalysisResult(data);
         
-        // Đổi tên layer tự động theo độ sâu
+        const allHoles = data.holes || [];
+        const vacuumHoles = (data.vacuum_holes && data.vacuum_holes.length > 0)
+          ? data.vacuum_holes 
+          : allHoles.filter(h => h.is_active !== false && (h.hole_type?.includes('back_drill') || h.hole_type?.includes('back')));
+        const structuralHoles = (data.structural_holes && data.structural_holes.length > 0)
+          ? data.structural_holes 
+          : allHoles.filter(h => !h.hole_type?.includes('back_drill') && !h.hole_type?.includes('back'));
+
         // Đổi tên layer tự động theo actual_z để ghép chung Frame và Holes vào cùng 1 Layer
-        const renamedHoles = (data.holes || []).map(h => ({
+        const renamedHoles = vacuumHoles.map(h => ({
            ...h, 
-           depth: `Z ${h.actual_z}`, 
-           zDepth: h.actual_z 
+           depth: `Z ${h.actual_z !== undefined ? h.actual_z : h.z}`, 
+           zDepth: h.actual_z !== undefined ? h.actual_z : h.z
         }));
         let renamedEdges = (data.edges || []).map(e => ({
            ...e, 
